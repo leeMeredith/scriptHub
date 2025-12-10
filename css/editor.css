@@ -1,0 +1,10 @@
+.sh-highlight {
+    background: yellow;
+    color: black;
+    padding: 0 2px;
+}
+
+.sh-focus {
+    outline: 2px solid #0b5fff;
+    background: #aee0ff;
+}

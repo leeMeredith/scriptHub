@@ -1,51 +1,25 @@
-window.onload = function() {
-    const fileInput = document.getElementById("fileInput");
-    const editor = document.getElementById("editor");
-    const preview = document.getElementById("preview");
+// js/app.js
+// Main startup logic for ScriptHub Editor
 
-    const STORAGE_KEY = "scriptHubCurrentScript";
+window.addEventListener("DOMContentLoaded", function () {
 
-    function renderPreview(text) {
-        if (typeof fountain !== "undefined" && fountain.parse) {
-            const parsed = fountain.parse(text);
-            preview.innerHTML = parsed.html.script || "No output from parser.";
-        } else {
-            preview.innerHTML = "Fountain parser not loaded.";
-        }
-    }
+    console.log("%c[App] ScriptHub Editor Booting…", "color:#0b5fff; font-weight:700;");
 
-    // Load saved text from localStorage if available
-    const savedText = localStorage.getItem(STORAGE_KEY);
-    const initialText = savedText || `Title: Example Script
-Author: You
+    // 1) Init core modules (state, parser, storage, preview)
+    if (window.SH && SH.state && SH.state.init) SH.state.init();
+    if (window.FountainParser && FountainParser.init) FountainParser.init();
+    if (window.CoreStorage && CoreStorage.init) CoreStorage.init();
+    if (window.CorePreview && CorePreview.init) CorePreview.init();
+    if (window.CoreProjects && CoreProjects.init) CoreProjects.init();
 
-INT. OFFICE - DAY
+    // 2) Init UI modules (editor, search, toolbar, tabs, nav, title, resize)
+    if (window.UIEditor && UIEditor.init) UIEditor.init();
+    if (window.UIToolbar && UIToolbar.init) UIToolbar.init();
+    if (window.UITabs && UITabs.init) UITabs.init();
+    if (window.UINavigation && UINavigation.init) UINavigation.init();
+    if (window.UISearch && UISearch.init) UISearch.init();
+    if (window.UITitlePage && UITitlePage.init) UITitlePage.init();
+    if (window.UIResize && UIResize.init) UIResize.init();
 
-PERSON
-Hello, this is a test.
-`;
-    editor.value = initialText;
-    renderPreview(initialText);
-
-    // Update preview and localStorage when editor content changes
-    editor.addEventListener("input", () => {
-        const text = editor.value;
-        renderPreview(text);
-        localStorage.setItem(STORAGE_KEY, text);
-    });
-
-    // Load selected .fountain file
-    fileInput.addEventListener("change", function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-            const text = evt.target.result;
-            editor.value = text;
-            renderPreview(text);
-            localStorage.setItem(STORAGE_KEY, text); // save loaded file
-        };
-        reader.readAsText(file);
-    });
-};
+    console.log("%c[App] All modules initialized.", "color:#0b5fff; font-weight:700;");
+});

@@ -22,3 +22,60 @@ body {
     white-space: pre-wrap;
     font-size: 16px;
 }
+
+/* -------------------------------
+   Vertical Right-Side Text Tabs
+   ------------------------------- */
+
+.right-tabs {
+  position: absolute;
+  left: -42px;
+  top: 0;
+  bottom: 0;
+  width: 42px;
+  display: flex;
+  flex-direction: column;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  overflow: hidden;
+  z-index: 30;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.tab-btn {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  padding: 12px 6px;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f9fafb;
+}
+
+.tab-btn:last-child {
+  border-bottom: none;
+}
+
+.tab-btn.active {
+  background: #ffffff;
+  color: #0b5fff;
+  font-weight: 700;
+  box-shadow: inset 3px 0 0 #0b5fff;
+}
+
+/* Tab content wrappers inside right panel */
+.tab-pane {
+  display: none;
+  height: 100%;
+  overflow: auto;
+}
+
+.tab-pane.active {
+  display: block;
+}
