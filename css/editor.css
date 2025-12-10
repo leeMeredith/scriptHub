@@ -1,10 +1,393 @@
-.sh-highlight {
-    background: yellow;
-    color: black;
-    padding: 0 2px;
+/* ============================================================
+   ScriptHub Editor — CSS
+   Clean, modular styles extracted from editor.html
+   ============================================================ */
+
+/* ------------------------------
+   Base & Resets
+   ------------------------------ */
+:root {
+    --accent: #0b5fff;
+    --muted: #6b7280;
+    --bg: #ffffff;
+    --panel: #f8fafc;
+    --card: #fbfdff;
+    --border: #e5e7eb;
+    --mono: "Courier New", Courier, monospace;
 }
 
-.sh-focus {
-    outline: 2px solid #0b5fff;
-    background: #aee0ff;
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+    color: #111;
+}
+
+/* ------------------------------
+   Header
+   ------------------------------ */
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    z-index: 10;
+    background: #fff;
+}
+
+header .brand {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+
+header a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* ------------------------------
+   Buttons
+   ------------------------------ */
+.btn {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    background: var(--accent);
+    color: white;
+}
+
+.btn.ghost {
+    background: white;
+    color: #111;
+    border: 1px solid var(--border);
+}
+
+.btn.flat {
+    background: transparent;
+    color: var(--muted);
+    border: 1px dashed transparent;
+}
+
+/* ------------------------------
+   Layout
+   ------------------------------ */
+.editor-layout {
+    display: flex;
+    height: calc(100vh - 56px);
+    max-width: 1600px;
+    margin: 0 auto;
+    background: transparent;
+}
+
+/* ------------------------------
+   Left Toolbar
+   ------------------------------ */
+.toolbar {
+    width: 110px;
+    min-width: 90px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tool-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.tool-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.tool-btn.ghost {
+    background: white;
+    color: #111;
+    border: 1px solid var(--border);
+}
+
+.tool-btn.small {
+    padding: 6px 8px;
+    font-size: 0.85rem;
+    border-radius: 5px;
+}
+
+/* ------------------------------
+   Editor Center Panel
+   ------------------------------ */
+.editor-container {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    gap: 10px;
+}
+
+.title-form {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    background: #fff;
+    align-items: center;
+}
+
+.title-form input,
+.title-form select {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    font-size: 0.95rem;
+}
+
+.title-form label {
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+/* ------------------------------
+   Search + Page Navigation
+   ------------------------------ */
+.search-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-left: auto;
+}
+
+.search-row input {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    min-width: 220px;
+}
+
+/* ------------------------------
+   Main Editor Textarea
+   ------------------------------ */
+.editor {
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+    flex: 1;
+}
+
+#scriptArea {
+    width: 100%;
+    resize: vertical;
+    flex: 1;
+    min-height: 0;
+    padding: 18px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 1.25rem;
+    line-height: 1.75;
+    white-space: pre-wrap;
+    overflow: auto;
+    background: #fff;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+}
+
+/* ------------------------------
+   Right Panel + Tabs
+   ------------------------------ */
+.right-wrap {
+    width: 360px;
+    min-width: 240px;
+    max-width: 760px;
+    background: var(--card);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.resize-handle {
+    width: 8px;
+    cursor: col-resize;
+    position: absolute;
+    left: -8px;
+    top: 0;
+    bottom: 0;
+    z-index: 20;
+}
+
+.right-top {
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.right-body {
+    padding: 12px;
+    overflow: auto;
+    flex: 1;
+}
+
+/* ------------------------------
+   Page Preview Styling
+   ------------------------------ */
+#preview {
+    padding: 12px;
+    background: linear-gradient(180deg,#ffffff,#fcfdff);
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.03);
+    min-height: 200px;
+    font-family: var(--mono);
+    white-space: pre-wrap;
+    line-height: 1.5;
+    font-size: 1rem;
+}
+
+.page {
+    border: 1px solid #dfe6f0;
+    background: white;
+    padding: 18px;
+    margin-bottom: 12px;
+    position: relative;
+    border-radius: 4px;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.03);
+}
+
+.page-number {
+    position: absolute;
+    right: 10px;
+    bottom: 6px;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+/* ------------------------------
+   Search Highlight
+   ------------------------------ */
+.match {
+    background: yellow;
+    padding: 0 2px;
+    border-radius: 2px;
+}
+
+/* ------------------------------
+   Tabs (Preview / Pages / Versions / GitTree)
+   ------------------------------ */
+.tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    font-weight: 600;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+}
+
+.tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+.tab-panel {
+    display: none;
+    padding: 12px;
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+/* ------------------------------
+   Modes: Screenplay / Stage / TV
+   ------------------------------ */
+.mode-screenplay #preview {
+    font-family: var(--mono);
+}
+
+.mode-stageplay #preview {
+    font-family: Georgia, "Times New Roman", serif;
+    font-style: italic;
+}
+
+.mode-tv #preview {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+}
+
+/* ------------------------------
+   Mobile
+   ------------------------------ */
+@media (max-width: 1000px) {
+    .right-wrap {
+        display: none;
+    }
+
+    .editor-layout {
+        padding: 0 8px;
+    }
+}
+
+/* ------------------------------
+   Accessibility Focus
+   ------------------------------ */
+[role="button"]:focus,
+button:focus,
+input:focus,
+textarea:focus {
+    outline: 3px solid rgba(11,95,255,0.12);
+    outline-offset: 2px;
+}
+
+/* ------------------------------
+   Helpers
+   ------------------------------ */
+.muted {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.kbd {
+    background: #f3f4f6;
+    border: 1px solid var(--border);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    margin-left: 6px;
 }
