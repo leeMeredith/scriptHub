@@ -23,6 +23,40 @@ body {
     font-size: 16px;
 }
 
+/* ===========================
+   TOPBAR NEW BUTTONS
+   =========================== */
+
+#homeButton,
+#saveProject,
+#openProject {
+  font-size: 14px;
+  padding: 6px 12px;
+  margin-right: 12px;
+  background: #f5f5f5;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#homeButton {
+  margin-right: 16px; /* extra space before ScriptHub Editor */
+}
+
+.filename-label {
+  font-size: 14px;
+  color: var(--muted);
+  font-style: italic;
+  margin-right: 12px;
+}
+
+.toolbar-separator {
+  margin: 0 10px;
+  color: var(--muted);
+  font-weight: 300;
+}
+
+
 /* -------------------------------
    Vertical Right-Side Text Tabs
    ------------------------------- */

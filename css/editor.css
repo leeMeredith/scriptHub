@@ -1,114 +1,287 @@
-/* Basic reset for the editor layout */
+:root {
+  --accent: #0b5fff;
+  --muted: #6b7280;
+  --bg: #ffffff;
+  --panel: #f8fafc;
+  --card: #fbfdff;
+  --border: #e5e7eb;
+  --mono: "Courier New", Courier, monospace;
+}
+
+/* Reset & Base */
+* {
+  box-sizing: border-box;
+}
 html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial;
+  color: #111;
+  background: var(--bg);
 }
 
-/* Topbar */
-#topbar {
+/* HEADER / TOPBAR */
+header, #topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: 56px;
   padding: 0 12px;
-  border-bottom: 1px solid rgba(0,0,0,0.08);
-  background: var(--topbar-bg, #fff);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
   z-index: 20;
 }
+header .brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+header a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.header-actions { display: flex; gap: 8px; align-items: center; }
 
-/* Layout fills remaining vertical space under topbar */
-#layout {
+/* MAIN LAYOUT */
+#layout, .editor-layout {
   display: flex;
   height: calc(100vh - 56px);
-  min-height: 0; /* critical for flex children to not overflow */
+  min-height: 0; /* critical for flex children to shrink properly */
+  max-width: 1600px;
+  margin: 0 auto;
+  background: transparent;
+  overflow: hidden;
 }
 
-/* Left toolbar */
-#toolbar {
-  width: 56px;
-  min-width: 56px;
-  border-right: 1px solid rgba(0,0,0,0.06);
-  padding: 8px 6px;
+/* LEFT TOOLBAR */
+#toolbar, .toolbar {
+  width: 110px;
+  min-width: 90px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  align-items: center;
-  background: var(--toolbar-bg, #fafafa);
   overflow: auto;
 }
 
-/* Workspace contains editor + resizer + sidePanel */
+/* ===========================
+   TOP BAR BUTTON & TITLE
+   =========================== */
+
+#homeButton {
+  font-size: 14px;
+  padding: 5px 12px;
+  margin-right: 14px;   /* space between Home and ScriptHub Editor */
+  cursor: pointer;
+  background: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.project-title {
+  display: flex;
+  align-items: center;
+  font-weight: 700;      /* makes ScriptHub bold */
+  font-size: 18px;
+}
+
+.editor-title {
+  margin-left: 6px;      /* tiny extra spacing after the button */
+}
+
+/* TOOL BUTTONS */
+.tool-row { display: flex; flex-direction: column; gap: 6px; }
+.tool-btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-align: center;
+}
+.tool-btn.ghost { background: white; color: #111; border: 1px solid var(--border); }
+.tool-btn.small { padding: 6px 8px; font-size: 0.85rem; border-radius: 5px; }
+.tool-btn:focus { outline: 3px solid rgba(11,95,255,0.15); }
+
+/* WORKSPACE (Editor + Resizer + Side Panel) */
 #workspace {
   display: flex;
   flex: 1 1 auto;
-  min-width: 0; /* vital to allow textarea to shrink properly */
+  min-width: 0; /* vital to allow editor to shrink */
   align-items: stretch;
   overflow: hidden;
 }
 
-/* Editor panel stretches to take available width */
-#editorPanel {
+/* EDITOR PANEL */
+#editorPanel, .editor-container {
   flex: 1 1 auto;
-  min-width: 0; /* allows child textarea to shrink inside flex */
-  padding: 12px;
+  min-width: 0; /* allows child textarea to shrink */
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  padding: 12px;
 }
 
-/* Full-size textarea */
-#editor {
+/* EDITOR / TEXTAREA */
+#editor, #scriptArea {
   width: 100%;
   height: 100%;
   min-height: 0; /* important inside flex */
-  resize: none;
-  border: 1px solid rgba(0,0,0,0.06);
-  padding: 12px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Courier New", monospace;
-  font-size: 14px;
-  line-height: 1.45;
-  box-sizing: border-box;
+  resize: vertical;
+  padding: 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 1.25rem;
+  line-height: 1.75;
+  white-space: pre-wrap;
   overflow: auto;
+  background: #fff;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.02);
 }
 
-/* Resizer between editorPanel and sidePanel */
+/* RESIZER */
 #resizer {
   width: 8px;
   cursor: col-resize;
-  background: linear-gradient(90deg, rgba(0,0,0,0.02), rgba(0,0,0,0.04));
   flex: 0 0 8px;
+  background: linear-gradient(90deg, rgba(0,0,0,0.02), rgba(0,0,0,0.04));
 }
 
-/* Side panel (preview/pages/versions) */
-#sidePanel {
-  width: 360px;            /* default width */
-  min-width: 260px;       /* fallback when resized narrow */
+/* SIDE PANEL */
+#sidePanel, .right-wrap {
+  width: 360px;
+  min-width: 240px;
   max-width: 70vw;
-  border-left: 1px solid rgba(0,0,0,0.06);
   display: flex;
   flex-direction: column;
+  background: var(--card);
+  border-left: 1px solid var(--border);
   overflow: auto;
-  background: var(--sidepanel-bg, #fff);
 }
 
-/* Tabs at top of sidePanel */
-#tabs {
+/* RIGHT PANEL CONTENT */
+#tabs, .right-top {
   display: flex;
-  gap: 6px;
-  padding: 8px;
-  border-bottom: 1px solid rgba(0,0,0,0.04);
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
 }
-
-/* Tab content should scroll internally */
-#tabContent {
-  padding: 8px;
+#tabContent, .right-body {
+  padding: 12px;
   overflow: auto;
   flex: 1 1 auto;
 }
 
-/* Ensure panels don't cause page to reflow out of view */
-* {
-  box-sizing: border-box;
+/* BUTTONS */
+.btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  background: var(--accent);
+  color: white;
+}
+.btn.ghost { background: white; color: #111; border: 1px solid var(--border); }
+.btn.flat { background: transparent; color: var(--muted); border: 1px dashed transparent; }
+
+/* PROJECT TITLE */
+.project-title {
+  font-weight: 700;      /* makes ScriptHub bold */
+  font-size: 18px;       /* optional—slightly larger */
+  display: flex;
+  align-items: center;
+}
+
+
+/* TITLE FORM */
+.title-form {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: #fff;
+  align-items: center;
+}
+.title-form input, .title-form select {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 0.95rem;
+}
+.title-form label { font-size: 0.85rem; color: var(--muted); }
+
+/* SEARCH ROW */
+.search-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+}
+.search-row input {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  min-width: 220px;
+}
+
+/* PAGE VISUALS / PREVIEW */
+#preview {
+  padding: 12px;
+  background: linear-gradient(180deg,#ffffff,#fcfdff);
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.03);
+  min-height: 200px;
+  font-family: var(--mono);
+  white-space: pre-wrap;
+  line-height: 1.5;
+  font-size: 1rem;
+}
+.page {
+  border: 1px solid #dfe6f0;
+  background: white;
+  padding: 18px;
+  margin-bottom: 12px;
+  position: relative;
+  border-radius: 4px;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.03);
+}
+.page-footer, .page-number { font-size: 0.85rem; color: var(--muted); }
+.page-number { position: absolute; right: 10px; bottom: 6px; }
+
+/* SEARCH HIGHLIGHT */
+.match { background: yellow; color: inherit; padding: 0 2px; border-radius: 2px; }
+
+/* MODES */
+.mode-screenplay #preview { font-family: var(--mono); }
+.mode-stageplay #preview { font-family: Georgia, "Times New Roman", serif; font-style: italic; }
+.mode-tv #preview { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; }
+
+/* RESPONSIVE */
+@media (max-width: 1000px){
+  #sidePanel, .right-wrap { display: none; }
+  #layout, .editor-layout { padding: 0 8px; }
+}
+
+/* Tiny helpers */
+.muted { color: var(--muted); font-size: 0.9rem; }
+.kbd {
+  background: #f3f4f6;
+  border: 1px solid var(--border);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  margin-left: 6px;
+}
+
+/* Accessibility focus */
+[role="button"]:focus, button:focus, input:focus, textarea:focus {
+  outline: 3px solid rgba(11,95,255,0.12);
+  outline-offset: 2px;
 }

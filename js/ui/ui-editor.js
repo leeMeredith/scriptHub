@@ -8,9 +8,9 @@
     let editor = null;
 
     function handleInput() {
-        const text = editor.value;
-        SH.state.setText(text, { source: "editor" });
-    }
+    	const text = editor.value;
+		SH.state.setText(text, { source: "editor" });
+	}
 
     function onTextChanged(e) {
         // Prevent infinite loop: only update if editor didn't cause the change
@@ -53,9 +53,9 @@
         console.log("%c[UI-Editor] Ready", "color:#7c3aed");
 
         // Export insert API for toolbar module
-        window.UIEditor = { insertAtCursor };
+        window.ui_editor = { insertAtCursor };
     }
 
-    window.UIEditor = window.UIEditor || { init };
+    window.ui_editor = window.ui_editor || { init };
 
 })();

@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>ScriptHub — Editor</title>
 
-  <!-- Global and Editor-specific styles -->
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/editor.css" />
 </head>
@@ -13,21 +12,22 @@
 
   <!-- Top Header -->
   <header id="topbar" role="banner">
-    <div class="project-title">ScriptHub</div>
+    <div class="project-title">
+      <button id="homeButton" type="button" aria-label="Home">Home</button>
+      <span class="editor-title">ScriptHub Editor</span>
+    </div>
 
     <div class="topbar-right">
-      <label class="file-label">
-        <input type="file" id="fileInput" accept=".fountain,.txt" />
-      </label>
-      <button id="saveProject">Save</button>
-      <button id="loadProject">Load</button>
+      <button id="saveProject" type="button" class="btn ghost small">Save</button>
+      <button id="openProject" type="button" class="btn ghost small">Open</button>
+      <input id="fileInput" type="file" accept=".fountain,.txt,.fdx,.text" style="display:none" />
+      <span id="filenameLabel" class="filename-label" aria-live="polite">No file selected</span>
+      <span class="toolbar-separator" aria-hidden="true">|</span>
     </div>
   </header>
 
-  <!-- Main Layout (fills remaining height) -->
+  <!-- Main Layout -->
   <div id="layout">
-
-    <!-- Left Toolbar -->
     <aside id="toolbar" role="navigation" aria-label="Editor toolbar">
       <button data-insert="scene">Scene</button>
       <button data-insert="action">Action</button>
@@ -35,18 +35,13 @@
       <button data-insert="transition">Transition</button>
     </aside>
 
-    <!-- Workspace: editor area + resizer + side panel -->
     <main id="workspace" role="main">
-
-      <!-- Fountain Textarea (editor) -->
       <section id="editorPanel" aria-label="Editor panel">
         <textarea id="editor" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
       </section>
 
-      <!-- Resizer sits between editorPanel and sidePanel -->
       <div id="resizer" title="Drag to resize panels" aria-hidden="false"></div>
 
-      <!-- Right Sliding Tabs / Side Panel -->
       <section id="sidePanel" aria-label="Side panel">
         <nav id="tabs" role="tablist" aria-label="Side tabs">
           <button data-tab="preview" class="active" role="tab">Preview</button>
@@ -76,15 +71,25 @@
     </main>
   </div>
 
-  <!-- Fountain parser library (keep these before your module entry if app.js imports them) -->
+  <!-- Fountain parser libraries -->
   <script src="lib/fountain-parser.min.js"></script>
   <script src="lib/fountain.js"></script>
+  
+  <script src="js/core/state.js"></script>
+  <script src="js/core/editor.js"></script>
 
-  <!--
-    IMPORTANT:
-    - Remove the plain <script src="js/editor.js"></script> unless you explicitly need it to run in the global scope.
-    - Prefer importing modules from app.js (type="module") to avoid double init or race conditions.
-  -->
+
+  <!-- UI Modules -->
+  <script src="js/ui/ui-editor.js"></script>
+  <script src="js/ui/ui-toolbar.js"></script>
+  <script src="js/ui/ui-tabs.js"></script>
+  <script src="js/ui/ui-navigation.js"></script>
+  <script src="js/ui/ui-search.js"></script>
+  <script src="js/ui/ui-titlePage.js"></script>
+  <script src="js/ui/ui-resize.js"></script>
+
+  <!-- Main App -->
   <script type="module" src="js/app.js"></script>
+
 </body>
 </html>
