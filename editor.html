@@ -17,13 +17,14 @@
       <span class="editor-title">ScriptHub Editor</span>
     </div>
 
-    <div class="topbar-right">
-      <button id="saveProject" type="button" class="btn ghost small">Save</button>
-      <button id="openProject" type="button" class="btn ghost small">Open</button>
-      <input id="fileInput" type="file" accept=".fountain,.txt,.fdx,.text" style="display:none" />
-      <span id="filenameLabel" class="filename-label" aria-live="polite">No file selected</span>
-      <span class="toolbar-separator" aria-hidden="true">|</span>
-    </div>
+	<div class="topbar-right">
+	  <button id="saveProject" type="button" class="btn ghost small">Save</button>
+	  <button id="saveProjectAs" type="button" class="btn ghost small">Save As</button>
+	  <button id="openProject" type="button" class="btn ghost small">Open</button>
+	  <input id="fileInput" type="file" accept=".fountain,.txt,.fdx,.text" style="display:none" />
+	  <span id="filenameLabel" class="filename-label" aria-live="polite">No file selected</span>
+	  <span class="toolbar-separator" aria-hidden="true">|</span>
+	</div>
   </header>
 
   <!-- Main Layout -->
@@ -87,6 +88,9 @@
   <script src="js/ui/ui-search.js"></script>
   <script src="js/ui/ui-titlePage.js"></script>
   <script src="js/ui/ui-resize.js"></script>
+  
+  <!-- Load FileAdapter first -->
+  <script src="js/fileAdapter.js"></script>
 
   <!-- Main App -->
   <script type="module" src="js/app.js"></script>

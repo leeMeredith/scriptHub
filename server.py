@@ -40,7 +40,23 @@ class ScriptHubHandler(SimpleHTTPRequestHandler):
             self._json_response({"filename": filename, "text": text})
             return
 
+        # --- Check if a file exists ---
+        if parsed.path == "/exists":
+            qs = parse_qs(parsed.query)
+            filename = qs.get("file", [None])[0]
+
+            if not filename:
+                self._error("Missing filename")
+                return
+
+            path = os.path.join(PROJECTS_DIR, filename)
+            exists = os.path.exists(path)
+            self._json_response({"exists": exists})
+            return
+
+        # Fall back to default GET handling
         super().do_GET()
+
 
     def do_POST(self):
         if self.path != "/save":
