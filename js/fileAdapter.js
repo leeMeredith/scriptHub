@@ -53,5 +53,10 @@ window.FileAdapter = (() => {
         return filename;
     }
 
-    return { open, save, saveAs };
+    return {
+	  open,     // browser: open(File)
+	  save,     // save(filename, text)
+	  saveAs    // saveAs(filename, text)
+	};
+
 })();

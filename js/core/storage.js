@@ -7,6 +7,51 @@
     const STORAGE_PREFIX = "ScriptHub.";
     const KEY_LAST_PROJECT = STORAGE_PREFIX + "lastProject";
     const KEY_SETTINGS = STORAGE_PREFIX + "settings";
+    
+    // -----------------------------------------------------------------------------
+	// Snapshot storage (autosave / crash recovery)
+	// Non-authoritative, non-user-facing, session safety only
+	// -----------------------------------------------------------------------------
+	
+	function saveSnapshot(projectId, text, meta = {}) {
+	    if (!projectId) return;
+	
+	    const payload = {
+	        text,
+	        meta,
+	        timestamp: Date.now()
+	    };
+	
+	    localStorage.setItem(
+	        STORAGE_PREFIX + "snapshot." + projectId,
+	        JSON.stringify(payload)
+	    );
+	}
+	
+	function loadSnapshot(projectId) {
+	    if (!projectId) return null;
+	
+	    const raw = localStorage.getItem(
+	        STORAGE_PREFIX + "snapshot." + projectId
+	    );
+	
+	    if (!raw) return null;
+	
+	    try {
+	        return JSON.parse(raw);
+	    } catch {
+	        return null;
+	    }
+	}
+	
+	function clearSnapshot(projectId) {
+	    if (!projectId) return;
+	
+	    localStorage.removeItem(
+	        STORAGE_PREFIX + "snapshot." + projectId
+	    );
+	}
+
 
     // Default settings
     const defaultSettings = {
@@ -66,15 +111,28 @@
 
     // Expose global API
     window.SH = window.SH || {};
-    window.SH.storage = {
-        saveProjectText,
-        loadProjectText,
-        saveSettings,
-        loadSettings,
-        setLastProject,
-        getLastProject,
-        defaultSettings
-    };
+
+	window.SH.storage = {
+	    // snapshots (non-authoritative)
+	    saveSnapshot,
+	    loadSnapshot,
+	    clearSnapshot,
+	
+	    // project persistence (authoritative)
+	    saveProjectText,
+	    loadProjectText,
+	
+	    // settings
+	    saveSettings,
+	    loadSettings,
+	
+	    // session
+	    setLastProject,
+	    getLastProject,
+	
+	    defaultSettings
+	};
+
 
     console.log("%c[Storage] Ready", "color:#0b5fff");
 

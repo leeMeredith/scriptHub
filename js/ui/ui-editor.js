@@ -2,6 +2,8 @@
 // Connects <textarea id="editor"> to the state system.
 // Handles input, cursor tools, and propagates text-changed events.
 
+return; // kill it
+
 (function () {
     const SH = window.SH || (window.SH = {});
 

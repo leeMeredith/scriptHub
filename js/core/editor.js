@@ -17,6 +17,9 @@
   let lastSavedContent = "";
   let handlers = { input: null, keydown: null };
 
+  let changeCallback = null;
+
+
   // -------------------------------------------------
   // Helpers
   // -------------------------------------------------
@@ -60,19 +63,21 @@
   // -------------------------------------------------
   // Event handlers
   // -------------------------------------------------
-  function onInput() {
-    if (!editorEl) return;
-
-    const text = editorEl.value;
-
-    // reflect into SH.state
-    if (window.SH && SH.state && typeof SH.state.setText === "function") {
-      try { SH.state.setText(text, { source: "editor" }); }
-      catch (err) { console.warn("[ui_editor] SH.state.setText threw", err); }
-    }
-
-    safeRenderPreview();
-  }
+	function onInput() {
+	    if (!editorEl) return;
+	
+	    const text = editorEl.value;
+	
+	    if (window.SH && SH.state && typeof SH.state.setText === "function") {
+	        SH.state.setText(text, { source: "editor" });
+	    }
+	
+	    if (typeof changeCallback === "function") {
+	        changeCallback();
+	    }
+	
+	    safeRenderPreview();
+	}
 
   function onKeydown(evt) {
     if (!editorEl) return;
@@ -278,6 +283,11 @@
     // ------------------------------------
     // Standard API
     // ------------------------------------
+    
+    onChange: function (cb) {
+    	changeCallback = cb;
+	},
+    
     getText: function () {
       return editorEl ? editorEl.value : "";
     },

@@ -2,252 +2,187 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ScriptHub — A Workspace Built for Writers</title>
-  <meta name="description" content="ScriptHub is a local-first writing workspace for screenplays, plays, and scripts. Write in Fountain, stay organized, and collaborate when you choose.">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ScriptHub</title>
 
   <style>
-    :root{
-      --bg:#ffffff;
-      --muted:#6b7280;
-      --accent:#0b5fff;
-      --card:#f8fafc;
-      --max-width:1100px;
-      --gap:18px;
-      color-scheme: light;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    :root {
+      --bg: #ffffff;
+      --panel: #f8fafc;
+      --border: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                   Roboto, Helvetica, Arial, sans-serif;
     }
 
-    html,body { margin:0; background:var(--bg); color:#111827; }
-    .site { max-width:var(--max-width); margin:28px auto; padding:18px; }
-
-    header {
-      display:flex; align-items:center; justify-content:space-between;
-      padding-bottom:6px;
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
     }
+
+    .app {
+      min-height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .welcome {
+      width: 100%;
+      max-width: 520px;
+      padding: 28px;
+      background: var(--panel);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.04);
+    }
+
     .brand {
-      display:flex; gap:12px; align-items:center;
-      text-decoration:none; color:inherit;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
     }
+
     .logo {
-      width:44px; height:44px; border-radius:6px;
-      background:linear-gradient(135deg,#0b5fff,#7c3aed);
-      display:flex; align-items:center; justify-content:center;
-      color:white; font-weight:700;
-    }
-    .title { font-size:1.05rem; font-weight:600; }
-
-    .nav { display:flex; gap:10px; }
-
-    .btn {
-      display:inline-block;
-      padding:10px 14px;
-      border-radius:8px;
-      text-decoration:none;
-      font-weight:600;
-      cursor:pointer;
-    }
-    .btn-ghost {
-      background:transparent;
-      border:1px solid #e6e9ef;
-      color:var(--muted);
-    }
-    .btn-primary {
-      background:var(--accent);
-      color:white;
-      border:none;
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      font-size: 1rem;
     }
 
-    main { margin-top:28px; display:grid; grid-template-columns:1fr; gap:22px; }
-
-    .hero {
-      background:var(--card);
-      padding:22px;
-      border-radius:12px;
-      box-shadow:0 1px 0 rgba(0,0,0,0.02);
-    }
-    .hero h1 {
-      margin:0 0 8px 0;
-      font-size:1.6rem;
-      font-weight:700;
-    }
-    .hero p { margin:0 0 16px 0; color:var(--muted); }
-
-    .actions { display:flex; gap:10px; }
-
-    .features {
-      display:grid;
-      gap:12px;
-      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-      margin-top:18px;
-    }
-    .feature {
-      border-radius:10px;
-      padding:14px;
-      background:#fff;
-      box-shadow:0 1px 2px rgba(16,24,40,0.03);
-    }
-    .feature h3 {
-      margin:0 0 8px 0;
-      font-size:1rem;
-      font-weight:600;
-    }
-    .feature p {
-      margin:0; color:var(--muted); font-size:0.95rem;
+    .title {
+      font-size: 1.25rem;
+      font-weight: 600;
     }
 
-    .samples {
-      margin-top:18px;
-      display:flex; gap:10px; flex-wrap:wrap;
-    }
-    .sample {
-      padding:12px 14px;
-      border-radius:8px;
-      background:#fff;
-      border:1px solid #eef2ff;
-      text-decoration:none;
-      color:inherit;
-      min-width:180px;
-      font-size:0.95rem;
+    .subtitle {
+      margin-top: 6px;
+      font-size: 0.95rem;
+      color: var(--muted);
+      line-height: 1.4;
     }
 
-    footer {
-      margin-top:26px;
-      padding-top:18px;
-      border-top:1px solid #eef2ff;
-      color:var(--muted);
-      font-size:0.92rem;
-      display:flex; justify-content:space-between;
-      flex-wrap:wrap; gap:8px;
+    .actions {
+      margin-top: 22px;
+      display: grid;
+      gap: 10px;
     }
 
-    @media (min-width:800px) {
-      main {
-        grid-template-columns:1fr 360px;
-        align-items:start;
-      }
+    button {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: #fff;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    button.primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+
+    button:hover {
+      filter: brightness(0.97);
+    }
+
+    .secondary {
+      margin-top: 18px;
+      font-size: 0.9rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .secondary a {
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    .secondary a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 
 <body>
-  <div class="site">
-    <header>
-      <a href="#" class="brand">
+  <div class="app">
+    <div class="welcome">
+      <div class="brand">
         <div class="logo">SH</div>
-        <div class="title">ScriptHub</div>
-      </a>
-
-      <nav class="nav">
-        <a class="btn btn-ghost" href="#" id="signInBtn">Sign In</a>
-        <a class="btn btn-primary" href="#" id="getStartedBtn">Get Started</a>
-      </nav>
-    </header>
-
-    <main>
-      <section class="hero">
-        <h1>Your writing, organized with structure and clarity</h1>
-        <p>
-          ScriptHub is a workspace built for screenwriters and playwrights.  
-          It uses plain-text Fountain files and a versioning system behind the scenes  
-          to keep your drafts organized and your writing grounded — without changing  
-          how you write.
-        </p>
-
-        <div class="actions">
-          <a class="btn btn-primary" href="#" id="createScript">Create Your First Script</a>
-          <a class="btn btn-ghost" href="#" id="learnMore">How ScriptHub Works</a>
-        </div>
-
-        <div class="features">
-          <div class="feature">
-            <h3>Offline-first</h3>
-            <p>Your work is stored locally. Write anywhere, with or without internet.</p>
-          </div>
-
-          <div class="feature">
-            <h3>Fountain-native</h3>
-            <p>Write naturally in a screenplay format designed for writers, not software.</p>
-          </div>
-
-          <div class="feature">
-            <h3>Structured Versioning</h3>
-            <p>
-              ScriptHub quietly tracks your drafts, branches, and changes  
-              in a clear timeline. No technical knowledge required.
-            </p>
-          </div>
-
-          <div class="feature">
-            <h3>Collaborators Welcome</h3>
-            <p>
-              Invite another writer with a link.  
-              They sync the project, write locally, and reconnect when ready.
-            </p>
+        <div>
+          <div class="title">ScriptHub</div>
+          <div class="subtitle">
+            A local-first writing workspace for screenplays and plays.
+            Write freely. Rewrite safely.
           </div>
         </div>
-      </section>
-
-      <aside class="sidebar">
-        <div style="background:var(--card); padding:14px; border-radius:10px;">
-          <h2 style="margin-top:0;">Sample Projects</h2>
-
-          <div class="samples">
-            <a class="sample" href="#" data-sample="example">Example Script</a>
-            <a class="sample" href="#" data-sample="short">Short Film Template</a>
-            <a class="sample" href="#" data-sample="play">Two-Act Play Template</a>
-          </div>
-
-          <p style="margin-top:10px; color:var(--muted); font-size:0.9rem;">
-            Loading a sample prepares the local editor so you can explore the workflow.
-          </p>
-        </div>
-      </aside>
-    </main>
-
-    <footer>
-      <div>
-        <a href="#" style="margin-right:12px;">About</a>
-        <a href="#" style="margin-right:12px;">FAQ</a>
-        <a href="#" style="margin-right:12px;">Workflow</a>
       </div>
-      <div>© <span id="year"></span> ScriptHub — Local-first writing workspace</div>
-    </footer>
+
+      <div class="actions">
+        <button class="primary" id="newScript">
+          New Script
+        </button>
+
+        <button id="openScript">
+          Open Existing Script
+        </button>
+
+        <button id="openSample">
+          Open Sample Script
+        </button>
+      </div>
+
+      <div class="secondary">
+        <a href="#" id="howItWorks">How ScriptHub Works</a>
+        <a href="#" id="quitApp">Quit</a>
+      </div>
+    </div>
   </div>
 
   <script>
-    document.getElementById('year').textContent = new Date().getFullYear();
+    function notify(msg) {
+      window.alert(msg);
+    }
 
-    function showAlert(msg){ window.alert(msg); }
+    document.getElementById("newScript").addEventListener("click", function () {
+      notify("Create a new local script and enter the editor.");
+    });
 
-    document.getElementById('getStartedBtn').addEventListener('click', function(e){
+    document.getElementById("openScript").addEventListener("click", function () {
+      notify("Open an existing local script.");
+    });
+
+    document.getElementById("openSample").addEventListener("click", function () {
+      notify("Load a sample project into the editor.");
+    });
+
+    document.getElementById("howItWorks").addEventListener("click", function (e) {
       e.preventDefault();
-      showAlert('This will open the ScriptHub writing workspace.');
+      notify("Show a brief explanation of the ScriptHub workflow.");
     });
 
-    document.getElementById('signInBtn').addEventListener('click', function(e){
+    document.getElementById("quitApp").addEventListener("click", function (e) {
       e.preventDefault();
-      showAlert('Sign-in connects to ScriptHub collaboration services.');
-    });
-
-    document.getElementById('createScript').addEventListener('click', function(e){
-      e.preventDefault();
-      showAlert('A new local project will be created with starter Fountain files.');
-    });
-
-    document.querySelectorAll('[data-sample]').forEach(function(el){
-      el.addEventListener('click', function(e){
-        e.preventDefault();
-        showAlert('Sample loaded into your local workspace: ' + el.dataset.sample);
-      });
-    });
-
-    window.addEventListener('keydown', function(e){
-      var cmd = e.metaKey || e.ctrlKey;
-      if (cmd && e.key === 'k') {
-        e.preventDefault();
-        document.getElementById('createScript').focus();
-      }
+      notify("Quit the application.");
     });
   </script>
 </body>
