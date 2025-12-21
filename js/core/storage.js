@@ -135,5 +135,7 @@
 
 
     console.log("%c[Storage] Ready", "color:#0b5fff");
+    window.dispatchEvent(new Event("storage-initialized"));
+
 
 })();

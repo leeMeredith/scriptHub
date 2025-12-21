@@ -19,12 +19,28 @@ function markClean(reason = "") {
     }
 }
 
-function confirmDiscardIfDirty() {
+async function confirmDiscardIfDirty() {
     if (!isDirty) return true;
 
-    return confirm(
-        "You have unsaved changes.\n\nDo you want to discard them?"
-    );
+    const choice = confirm("You have unsaved changes.\n\nPress OK to save before opening a new file, Cancel to discard changes.");
+
+    if (choice) {
+        // User wants to save
+        const currentProject = ProjectController.getCurrentProject();
+
+        if (!currentProject) {
+            const filename = prompt("No project open. Enter filename to save:");
+            if (!filename) return false; // user cancelled
+            await ProjectController.saveAs(filename);
+        } else {
+            await ProjectController.save();
+        }
+
+        return true;
+    } else {
+        // User wants to discard changes
+        return confirm("Discard unsaved changes?\n\nPress OK to discard, Cancel to keep editing.");
+    }
 }
 
 // Guard browser close / reload
@@ -61,6 +77,25 @@ function updateWindowTitle() {
     }
 
     document.title = `${title} — ScriptHub`;
+}
+
+// ----------------------------
+// Storage readiness gate
+// ----------------------------
+window.SH = window.SH || {};
+
+if (!window.SH.storageReady) {
+    window.SH.storageReady = new Promise((resolve) => {
+        if (window.SH.storage?.loadProjectText) {
+            console.log("[StorageReady] Storage already ready");
+            resolve();
+        } else {
+            window.addEventListener("storage-initialized", () => {
+                console.log("[StorageReady] Storage initialized");
+                resolve();
+            });
+        }
+    });
 }
 
 // Autosave control (placeholders)
@@ -119,36 +154,50 @@ const ProjectController = (() => {
 	    console.log("[ProjectController] Adopted open project:", filename);
 	}
 
-    async function open(filename) {
-        if (!filename) return;
-
-        if (!window.SH?.storage?.loadProjectText) {
-            console.warn("[ProjectController] Storage not ready");
-            return;
-        }
-
-        console.log("[ProjectController] Opening project:", filename);
-
-        const text = await SH.storage.loadProjectText(filename);
-
-        // Editor content
-        window.ui_editor?.setText?.(text);
-
-        // Reset view
-        window.ui_editor?.setCursor?.(0);
-        window.ui_editor?.setScroll?.(0);
-
-        // Title state
-        if (window.SH?.titleState) {
-            SH.titleState.setTitle(filename, { dirty: false });
-            SH.titleState.markClean();
-        }
-
-        markClean("project opened");
-
-        currentProject = filename;
-        localStorage.setItem("lastProject", filename);
-    }
+	async function open(input) {
+	    if (!input) return;
+	
+	    let filename, text;
+	
+	    if (typeof input === "string") {
+	        // Opening from lastProject / storage
+	        filename = input;
+	
+	        if (!window.SH?.storage?.loadProjectText) {
+	            console.warn("[ProjectController] Storage not ready");
+	            return;
+	        }
+	
+	        text = await SH.storage.loadProjectText(filename);
+	    } else if (typeof input === "object") {
+	        // Opening from file picker with raw text
+	        filename = input.filename;
+	        text = input.text;
+	    } else {
+	        console.warn("[ProjectController] Invalid open input", input);
+	        return;
+	    }
+	
+	    console.log("[ProjectController] Opening project:", filename);
+	
+	    // Editor content
+	    window.ui_editor?.setText?.(text);
+	
+	    // Reset view
+	    window.ui_editor?.setCursor?.(0);
+	    window.ui_editor?.setScroll?.(0);
+	
+	    // Title state
+	    if (window.SH?.titleState) {
+	        SH.titleState.setTitle(filename, { dirty: false });
+	        SH.titleState.markClean();
+	    }
+	
+	    markClean("project opened");
+	
+	    currentProject = filename;
+	    localStorage.setItem("lastProject", filename);
+	}
 
     async function save() {
         if (!currentProject) return;
@@ -196,73 +245,122 @@ window.addEventListener("DOMContentLoaded", async () => {
     const openBtn = document.getElementById("openProject");
     const hiddenInput = document.getElementById("fileInput");
     const saveAsBtn = document.getElementById("saveProjectAs");
+    const newProjectBtn = document.getElementById("newProjectButton");
     const filenameLabel = document.getElementById("filenameLabel");
     
     // HOME
-    homeBtn?.addEventListener("click", () => {
-        if (!confirmDiscardIfDirty()) return;
-        window.location.href = "index.html";
-    });
+	homeBtn?.addEventListener("click", async () => {
+	    if (!await confirmDiscardIfDirty()) return;
+	    window.location.href = "index.html";
+	});
 
-    // OPEN
-    openBtn?.addEventListener("click", () => hiddenInput?.click());
+	// OPEN button
+	openBtn?.addEventListener("click", async () => {
+	    // Check for unsaved changes first
+	    if (!await confirmDiscardIfDirty()) return;
+	
+	    // Trigger hidden file input
+	    hiddenInput?.click();
+	});
+	
+	// File input change handler
+	hiddenInput?.addEventListener("change", async (ev) => {
+	    const file = ev.target.files[0];
+	    if (!file) return;
+	
+	    try {
+	        const result = await FileAdapter.open(file);
+	
+	        // Unified open via ProjectController
+	        await ProjectController.open({
+	            filename: result.filename,
+	            text: result.text
+	        });
+	
+	        // Restore saved editor state
+	        const savedStateKey = `editorState_${result.filename}`;
+	        const savedState = JSON.parse(localStorage.getItem(savedStateKey) || "{}");
+	
+	        if (savedState.cursor != null && window.ui_editor.setCursor) {
+	            window.ui_editor.setCursor(savedState.cursor);
+	        }
+	
+	        if (savedState.scroll != null && window.ui_editor.setScroll) {
+	            window.ui_editor.setScroll(savedState.scroll);
+	        }
+	
+	        console.log("[App] Opened", result.filename);
+	    } catch (err) {
+	        console.error("[App] Open failed", err);
+	        alert("Failed to open file.");
+	    } finally {
+	        // Reset input so same file can be re-selected
+	        ev.target.value = "";
+	    }
+	});
 
-    hiddenInput?.addEventListener("change", async (ev) => {
-        if (!confirmDiscardIfDirty()) {
-            ev.target.value = ""; // reset file input
-            return;
-        }
 
-        const file = ev.target.files[0];
-        if (!file) return;
+	// ----------------------------
+	// Keyboard shortcuts
+	// ----------------------------
+	document.addEventListener("keydown", async (e) => {
+	    const isCmd = e.metaKey || e.ctrlKey;
+	    if (!isCmd) return;
+	
+	    const key = e.key.toLowerCase();
+	
+	    // --------------------
+	    // Open (Cmd/Ctrl + O)
+	    // --------------------
+	    if (key === "o" && !e.shiftKey) {
+	        e.preventDefault();
+	
+	        // Check for unsaved changes first
+	        if (!await confirmDiscardIfDirty()) return;
+	
+	        // Open file picker
+	        hiddenInput?.click();
+	    }
+	
+	    // --------------------
+	    // Save (Cmd/Ctrl + S)
+	    // --------------------
+	    if (key === "s" && !e.shiftKey) {
+	        e.preventDefault();
+	        const currentProject = ProjectController.getCurrentProject();
+	
+	        if (!currentProject) {
+	            alert("No project open. Use Save As (Shift+Cmd/Ctrl+S) to create a new project.");
+	            return;
+	        }
+	
+	        try {
+	            await ProjectController.save();
+	            console.log("[Keyboard] Saved via shortcut");
+	        } catch (err) {
+	            console.error("[Keyboard] Save error", err);
+	            alert("Save failed. Check console.");
+	        }
+	    }
+	
+	    // --------------------
+	    // Save As (Shift + Cmd/Ctrl + S)
+	    // --------------------
+	    if (key === "s" && e.shiftKey) {
+	        e.preventDefault();
+	        const filename = prompt("Save As filename:");
+	        if (!filename) return;
+	
+	        try {
+	            await ProjectController.saveAs(filename);
+	            console.log("[Keyboard] Saved As via shortcut:", filename);
+	        } catch (err) {
+	            console.error("[Keyboard] Save As error", err);
+	            alert("Save As failed. Check console.");
+	        }
+	    }
+	});
 
-        try {
-            const result = await FileAdapter.open(file);
-
-            // Current: manually sets the editor text from a freshly opened file
-			// Future: ProjectController.open() should handle both filenames and raw file content,
-			//         so we can remove this manual setText call and centralize open logic
-            window.ui_editor?.setText?.(result.text);
-            
-            // Tell ProjectController that a project is now open
-			ProjectController.adoptOpenProject(result.filename);
-
-            // Update title state
-            if (window.SH?.titleState) {
-                SH.titleState.setTitle(result.filename, { dirty: false });
-                SH.titleState.markClean();
-            }
-
-            // App-level dirty flag
-            markClean("open");
-
-            // Restore saved editor state
-			const savedStateKey = `editorState_${result.filename}`;
-
-            const savedState = JSON.parse(localStorage.getItem(savedStateKey) || "{}");
-
-            if (savedState.cursor != null && window.ui_editor.setCursor) {
-                window.ui_editor.setCursor(savedState.cursor);
-            }
-
-            if (savedState.scroll != null && window.ui_editor.setScroll) {
-                window.ui_editor.setScroll(savedState.scroll);
-            }
-
-            console.log("[App] Opened", result.filename);
-        } catch (err) {
-            console.error("[App] Open failed", err);
-            alert("Failed to open file.");
-        }
-    });
-
-    // Quick key Ctrl/Cmd + O
-    document.addEventListener("keydown", (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "o") {
-            e.preventDefault();
-            hiddenInput?.click();
-        }
-    });
 
     // SAVE
 	saveBtn?.addEventListener("click", async () => {
@@ -293,6 +391,25 @@ window.addEventListener("DOMContentLoaded", async () => {
 	        alert("Save As failed. Check console.");
 	    }
 	});
+	
+	newProjectBtn?.addEventListener("click", async () => {
+	    if (!await confirmDiscardIfDirty()) return;
+	
+	    // Clear editor and reset state
+	    window.ui_editor?.setText?.("");
+	    window.ui_editor?.setCursor?.(0);
+	    window.ui_editor?.setScroll?.(0);
+	
+	    markClean("new project");
+	    ProjectController.adoptOpenProject(null);
+	
+	    if (window.SH?.titleState) {
+	        SH.titleState.setTitle("Untitled", { dirty: false });
+	        SH.titleState.markClean();
+	    }
+	
+	    console.log("[App] New project created");
+	});
 
     // ----------------------------
     // Initialize UI Modules
@@ -304,16 +421,18 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     await window.ui_editor.init();
 
-	// Load last-opened project (via ProjectController)
-	// NOTE: At this point storage may not be ready yet. 
-	//       The warning "[ProjectController] Storage not ready" is expected if
-	//       SH.storage hasn't initialized. 
-	//       In a future refactor, we should wait for storage initialization 
-	//       before attempting to open the last project to ensure auto-load works.
-	const lastProject = localStorage.getItem("lastProject");
-	if (lastProject) {
-	    ProjectController.open(lastProject);
-	}
+	// Load last-opened project AFTER storage is ready
+	window.SH.storageReady.then(async () => {
+	    const lastProject = localStorage.getItem("lastProject");
+	    if (!lastProject) return;
+	
+	    try {
+			await ProjectController.open({ filename: lastProject });
+	        console.log("[Startup] Last project loaded:", lastProject);
+	    } catch (err) {
+	        console.error("[Startup] Failed to load last project:", err);
+	    }
+	});
 
     
 	window.ui_editor.setDirtyCallback = markDirty;
