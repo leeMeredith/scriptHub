@@ -23,11 +23,23 @@ function markClean(reason = "") {
     }
 }
 
+
+
+// ProjectController — lifecycle authority
+// -------------------------------------------------
+// Owns project state transitions (open, save, new).
+// Must remain UI-agnostic and platform-agnostic.
+// Electron menus, shortcuts, and IPC should call
+// into this controller without duplicating logic.
+
 // ----------------------------
 // Confirm before losing changes
 // ----------------------------
-async function confirmDiscardIfDirty() {
-    if (!isDirty) return true;
+async function confirmDiscardIfDirty(onContinue) {
+    if (!isDirty) {
+        if (onContinue) await onContinue();
+        return true;
+    }
 
     const choice = confirm(
         "You have unsaved changes.\n\n" +
@@ -44,10 +56,16 @@ async function confirmDiscardIfDirty() {
         } else {
             await ProjectController.save();
         }
+
+        if (onContinue) await onContinue();
         return true;
     }
 
-    return confirm("Discard unsaved changes?");
+    const discard = confirm("Discard unsaved changes?");
+    if (!discard) return false;
+
+    if (onContinue) await onContinue();
+    return true;
 }
 
 // ----------------------------
@@ -141,10 +159,18 @@ const ProjectController = (() => {
         adoptOpenProject(filename);
     }
 
+	// FileAdapter
+	// -------------------------------------------------
+	// Abstracts all file system access.
+	// Browser version uses input elements + local APIs.
+	// Electron version will proxy to main process via IPC.
+	// ProjectController MUST NOT depend on platform details.
+
     async function save() {
         if (!currentProject) return;
 
         const text = window.ui_editor.getText();
+        
         await FileAdapter.save(currentProject, text);
 
         markClean("saved");
@@ -220,6 +246,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     const saveBtn = document.getElementById("saveProject");
     const saveAsBtn = document.getElementById("saveProjectAs");
     const newBtn = document.getElementById("newProjectButton");
+    // Browser-only open mechanism.
+	// In Electron, this will be replaced by native dialogs
+	// triggered from main process and routed here.
     const hiddenInput = document.getElementById("fileInput");
     const filenameLabel = document.getElementById("filenameLabel");
 
@@ -234,8 +263,12 @@ window.addEventListener("DOMContentLoaded", async () => {
 	});
 	
 	openBtn?.addEventListener("click", async () => {
-	    if (!await confirmDiscardIfDirty()) return; // Prompt if dirty
-	    hiddenInput?.click();
+		// Browser-only open mechanism.
+		// In Electron, this callback will invoke a native dialog via IPC
+		// instead of triggering a hidden file input.
+	    await confirmDiscardIfDirty(() => {
+	        hiddenInput?.click(); // Finder opens immediately
+	    });
 	});
 	
 	hiddenInput?.addEventListener("change", async (e) => {
@@ -276,6 +309,10 @@ window.addEventListener("DOMContentLoaded", async () => {
 	    ProjectController.newProject(); // Clears editor only after consent
 	});
 	
+	
+	// Keyboard shortcuts (renderer).
+	// Electron will later map native menu accelerators
+	// to these same ProjectController actions.
 	// ----------------------------
 	// Keyboard shortcuts
 	// ----------------------------
