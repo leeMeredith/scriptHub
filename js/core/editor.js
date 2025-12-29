@@ -1,7 +1,7 @@
 /* js/core/editor.js
    Full merged version:
    - All original logic preserved
-   - Includes saveToProject()
+   - Includes saveToFile()
    - Correct API structure
 */
 
@@ -50,101 +50,122 @@
     if (autosaveTimer) { clearInterval(autosaveTimer); autosaveTimer = null; }
   }
 
-  function safeRenderPreview() {
+  function safeRenderPreview(text, options) {
     try {
-      previewBridge &&
-      typeof previewBridge.render === "function" &&
-      previewBridge.render();
+      if (window.CorePreview && typeof CorePreview.updateFromEditor === "function") {
+        CorePreview.updateFromEditor(text, options);
+      }
     } catch (err) {
-      console.warn("[ui_editor] previewBridge.render() failed", err);
+      console.warn("[ui_editor] CorePreview.updateFromEditor failed", err);
     }
   }
 
   // -------------------------------------------------
   // Event handlers
   // -------------------------------------------------
-	function onInput() {
-	    if (!editorEl) return;
+  function onInput() {
+    if (!editorEl) return;
+
+    const text = editorEl.value;
+
+    if (window.SH && SH.state && typeof SH.state.setText === "function") {
+        SH.state.setText(text, { source: "typing" });
+    }
+
+    if (typeof changeCallback === "function") {
+        changeCallback();
+    }
+
+	safeRenderPreview(text, { source: "typing" });
 	
-	    const text = editorEl.value;
-	
-	    if (window.SH && SH.state && typeof SH.state.setText === "function") {
-	        SH.state.setText(text, { source: "editor" });
-	    }
-	
-	    if (typeof changeCallback === "function") {
-	        changeCallback();
-	    }
-	
-	    safeRenderPreview();
+	if (previewBridge && typeof previewBridge.render === "function") {
+		previewBridge.render(editorEl.value);
 	}
 
-  function onKeydown(evt) {
-    if (!editorEl) return;
-    const isCmd = evt.ctrlKey || evt.metaKey;
-
-    // Cmd+Enter inserts \f
-    if (isCmd && evt.key === "Enter") {
-      const start = editorEl.selectionStart;
-      const end = editorEl.selectionEnd;
-      const PAGE_BREAK = "\f";
-
-      editorEl.value = editorEl.value.slice(0, start) +
-                       PAGE_BREAK +
-                       editorEl.value.slice(end);
-
-      editorEl.selectionStart = editorEl.selectionEnd =
-        start + PAGE_BREAK.length;
-
-      onInput();
-      evt.preventDefault();
-      return;
-    }
-
-    // Cmd+B (prevent default, style handled elsewhere)
-    if (isCmd && (evt.key === "b" || evt.key === "B")) {
-      evt.preventDefault();
-      return;
-    }
-
-    // Navigation forwarding
-    if (isCmd && (evt.key === "ArrowDown" || evt.key === "ArrowUp")) {
-      try {
-        if (!previewBridge) return;
-
-        const idx = typeof previewBridge.getCurrentPageIndex === "function"
-          ? previewBridge.getCurrentPageIndex()
-          : 0;
-
-        if (evt.key === "ArrowDown" &&
-            typeof previewBridge.jumpToMatch === "function") {
-          previewBridge.jumpToMatch(idx + 1);
-        } else if (evt.key === "ArrowUp" &&
-                   typeof previewBridge.jumpToMatch === "function") {
-          previewBridge.jumpToMatch(idx - 1);
-        }
-
-        evt.preventDefault();
-      } catch (err) { /* ignore */ }
-    }
   }
+
+	function onKeydown(evt) {
+	    if (!editorEl) return;
+	    const isCmd = evt.ctrlKey || evt.metaKey;
+	
+	    // Cmd+Enter inserts \f
+	    if (isCmd && evt.key === "Enter") {
+	        const start = editorEl.selectionStart;
+	        const end = editorEl.selectionEnd;
+	        const PAGE_BREAK = "\f";
+	
+	        editorEl.value = editorEl.value.slice(0, start) +
+	                         PAGE_BREAK +
+	                         editorEl.value.slice(end);
+	
+	        editorEl.selectionStart = editorEl.selectionEnd = start + PAGE_BREAK.length;
+	        onInput();
+	        evt.preventDefault();
+	        return;
+	    }
+	
+	    // Cmd+B (prevent default, style handled elsewhere)
+	    if (isCmd && (evt.key === "b" || evt.key === "B")) {
+	        evt.preventDefault();
+	        return;
+	    }
+	
+	    // Cmd + Arrow keys → navigate preview
+	    if (isCmd && (evt.key === "ArrowDown" || evt.key === "ArrowUp")) {
+	        try {
+	            let nextIdx = 0;
+	
+	            // Prefer previewBridge if available
+	            if (previewBridge && typeof previewBridge.getCurrentPageIndex === "function") {
+	                const idx = previewBridge.getCurrentPageIndex();
+	                nextIdx = evt.key === "ArrowDown" ? idx + 1 : idx - 1;
+	
+	                if (typeof previewBridge.jumpToMatch === "function") {
+	                    previewBridge.jumpToMatch(nextIdx);
+	                    evt.preventDefault();
+	                    return;
+	                }
+	            }
+	
+	            // Fallback to UINavigation
+	            if (window.UINavigation && typeof window.UINavigation.jumpToPage === "function") {
+	                const currentIdx = window.SH.pages?.findIndex(p => p.highlighted) ?? 0;
+	                nextIdx = evt.key === "ArrowDown"
+	                    ? Math.min(currentIdx + 1, window.SH.pages.length - 1)
+	                    : Math.max(currentIdx - 1, 0);
+	
+	                window.UINavigation.jumpToPage(nextIdx);
+	                evt.preventDefault();
+	            }
+	
+	        } catch (err) {
+	            console.warn("[ui_editor] navigation failed", err);
+	        }
+	    }
+	}
+
 
   // -------------------------------------------------
   // Fallback preview bridge
   // -------------------------------------------------
-  function createFallbackBridge(opts) {
-    const previewEl = opts.previewEl || document.getElementById("preview");
-
-    return {
-      render: function () {
-        if (!previewEl) return;
-        const txt = (editorEl && editorEl.value) ? editorEl.value : "";
-        previewEl.textContent = txt;
-      },
-      jumpToMatch: function () {},
-      getCurrentPageIndex: function () { return 0; }
-    };
-  }
+	function createFallbackBridge(opts) {
+	  const previewEl = opts.previewEl || document.getElementById("preview");
+	
+	  return {
+	    render: function (text) {
+	      if (!previewEl) return;
+	
+		  // Directly call CorePreview if available
+		  if (window.CorePreview && typeof CorePreview.updateFromEditor === "function") {
+		    CorePreview.updateFromEditor(text, { source: "fallback-bridge" });
+		  } else {
+		    previewEl.textContent = text; // plain text fallback
+		  }
+	    },
+	    jumpToMatch: function () {},
+	    getCurrentPageIndex: function () { return 0; }
+	  };
+	}
 
   // -------------------------------------------------
   // API
@@ -236,7 +257,7 @@
         startAutosave();
 
         // First render
-        safeRenderPreview();
+        safeRenderPreview(editorEl.value, { source: "initial-load", immediate: true });
 
         // signal
         setTimeout(() => {
@@ -250,9 +271,9 @@
     },
 
     // ------------------------------------
-    // NEW: Save to local project folder
+    // NEW: Save to local flie folder
     // ------------------------------------
-    saveToProject: async function (filename) {
+    saveToFile: async function (filename) {
       if (!editorEl) return;
 
       const text = editorEl.value;
@@ -272,7 +293,7 @@
         const json = await res.json();
         console.log("[editor] Saved:", json);
 
-        alert("Saved to projects/" + body.filename);
+        alert("Saved to files/" + body.filename);
 
       } catch (err) {
         console.error("[editor] Save failed", err);
@@ -306,7 +327,11 @@
         catch (err) {}
       }
 
-      safeRenderPreview();
+	  safeRenderPreview(editorEl.value, {
+	    source: opts?.source || "programmatic",
+	    immediate: true
+	  });
+
     },
 
     focus: function () {

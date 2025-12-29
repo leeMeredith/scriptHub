@@ -28,7 +28,7 @@ window.SH = window.SH || {};
 
 if (!window.SH.storageReady) {
     window.SH.storageReady = new Promise((resolve) => {
-        if (window.SH.storage?.loadProjectText) {
+        if (window.SH.storage?.loadFileText) {
             resolve();
         } else {
             window.addEventListener("storage-initialized", resolve);
@@ -48,10 +48,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     // UI elements
     // ----------------------------
     const homeBtn = document.getElementById("homeButton");
-    const openBtn = document.getElementById("openProject");
-    const saveBtn = document.getElementById("saveProject");
-    const saveAsBtn = document.getElementById("saveProjectAs");
-    const newBtn = document.getElementById("newProjectButton");
+    const openBtn = document.getElementById("openFile");
+    const saveBtn = document.getElementById("saveFile");
+    const saveAsBtn = document.getElementById("saveFileAs");
+    const newBtn = document.getElementById("newFileButton");
     // Browser-only open mechanism.
 	// In Electron, this will be replaced by native dialogs
 	// triggered from main process and routed here.
@@ -88,38 +88,38 @@ window.addEventListener("DOMContentLoaded", async () => {
 	    if (!file) return;
 	
 	    const result = await FileAdapter.open(file);
-	    await projectController.open(result); // Open does NOT save automatically
+	    await fileController.open(result); // Open does NOT save automatically
 	    e.target.value = "";
 	});
 	
 	saveBtn?.addEventListener("click", async () => {
-	    const current = projectController.getCurrentProject();
+	    const current = fileController.getCurrentFile();
 	
 	    if (!current) {
 	        const name = prompt("Save As filename:");
 	        if (!name) return;
-	        await projectController.saveAs(name);
+	        await fileController.saveAs(name);
 	        return;
 	    }
 	
-	    await projectController.save();
+	    await fileController.save();
 	});
 	
 	saveAsBtn?.addEventListener("click", async () => {
 	    const name = prompt("Save As filename:");
 	    if (!name) return;
-	    await projectController.saveAs(name); // Save under new name, never clears editor
+	    await fileController.saveAs(name); // Save under new name, never clears editor
 	});
 	
 	newBtn?.addEventListener("click", async () => {
 	    if (!await unsavedChangesController.confirmDiscardIfDirty()) return; // Prompt if dirty
-	    projectController.newProject(); // Clears editor only after consent
+	    fileController.newFile(); // Clears editor only after consent
 	});
 	
 	
 	// Keyboard shortcuts (renderer).
 	// Electron will later map native menu accelerators
-	// to these same projectController actions.
+	// to these same fileController actions.
 	// ----------------------------
 	// Keyboard shortcuts
 	// ----------------------------
@@ -140,15 +140,15 @@ window.addEventListener("DOMContentLoaded", async () => {
 		if (key === "s" && !e.shiftKey) {
 		    e.preventDefault();
 		
-		    const current = projectController.getCurrentProject();
+		    const current = fileController.getCurrentFile();
 		    if (!current) {
 		        const name = prompt("Save As filename:");
 		        if (!name) return;
-		        await projectController.saveAs(name);
+		        await fileController.saveAs(name);
 		        return;
 		    }
 		
-		    await projectController.save();
+		    await fileController.save();
 		}
 	
 	    // Save As
@@ -156,16 +156,22 @@ window.addEventListener("DOMContentLoaded", async () => {
 	        e.preventDefault();
 	        const name = prompt("Save As filename:");
 	        if (!name) return;
-	        await projectController.saveAs(name); // Always saves, never clears
+	        await fileController.saveAs(name); // Always saves, never clears
 	    }
 	
 	    // New
 	    if (key === "n" && !e.shiftKey) {
 	        e.preventDefault();
 	        if (!await unsavedChangesController.confirmDiscardIfDirty()) return;
-	        projectController.newProject(); // Clears editor only after consent
+	        fileController.newFile(); // Clears editor only after consent
 	    }
 	});
+
+	// Initialize CorePreview first
+	CorePreview.init({ previewId: "preview" });
+	
+	// Then initialize editor
+	await ui_editor.init({ previewId: "preview" });
 
     // ----------------------------
     // Editor init
@@ -187,7 +193,7 @@ window.addEventListener("DOMContentLoaded", async () => {
             window.ui_editor.setScroll?.(session.scroll ?? 0);
 
             if (session.filename) {
-                projectController.adoptOpenProject(session.filename);
+                fileController.adoptOpenFile(session.filename);
                 SH.titleState?.setTitle(session.filename, { dirty: true });
             } else {
                 SH.titleState?.setTitle("Untitled", { dirty: true });
@@ -197,7 +203,7 @@ window.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
-        projectController.newProject();
+        fileController.newFile();
         
     })().finally(() => {
         startupInProgress = false;
@@ -214,7 +220,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         SH.titleState?.markDirty();
 
         localStorage.setItem("sessionState", JSON.stringify({
-            filename: projectController.getCurrentProject(),
+            filename: fileController.getCurrentFile(),
             text: window.ui_editor.getText(),
             cursor: window.ui_editor.getCursor?.(),
             scroll: window.ui_editor.getScroll?.(),

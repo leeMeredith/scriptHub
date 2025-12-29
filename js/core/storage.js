@@ -1,11 +1,11 @@
 // js/core/storage.js
-// Responsible for saving/loading drafts, project files,
+// Responsible for saving/loading drafts, file files,
 // user settings, and firing events so other modules stay in sync.
 
 (function () {
 
     const STORAGE_PREFIX = "ScriptHub.";
-    const KEY_LAST_PROJECT = STORAGE_PREFIX + "lastProject";
+    const KEY_LAST_FILE = STORAGE_PREFIX + "lastFile";
     const KEY_SETTINGS = STORAGE_PREFIX + "settings";
     
     // -----------------------------------------------------------------------------
@@ -13,8 +13,8 @@
 	// Non-authoritative, non-user-facing, session safety only
 	// -----------------------------------------------------------------------------
 	
-	function saveSnapshot(projectId, text, meta = {}) {
-	    if (!projectId) return;
+	function saveSnapshot(fileId, text, meta = {}) {
+	    if (!fileId) return;
 	
 	    const payload = {
 	        text,
@@ -23,16 +23,16 @@
 	    };
 	
 	    localStorage.setItem(
-	        STORAGE_PREFIX + "snapshot." + projectId,
+	        STORAGE_PREFIX + "snapshot." + fileId,
 	        JSON.stringify(payload)
 	    );
 	}
 	
-	function loadSnapshot(projectId) {
-	    if (!projectId) return null;
+	function loadSnapshot(fileId) {
+	    if (!fileId) return null;
 	
 	    const raw = localStorage.getItem(
-	        STORAGE_PREFIX + "snapshot." + projectId
+	        STORAGE_PREFIX + "snapshot." + fileId
 	    );
 	
 	    if (!raw) return null;
@@ -44,11 +44,11 @@
 	    }
 	}
 	
-	function clearSnapshot(projectId) {
-	    if (!projectId) return;
+	function clearSnapshot(fileId) {
+	    if (!fileId) return;
 	
 	    localStorage.removeItem(
-	        STORAGE_PREFIX + "snapshot." + projectId
+	        STORAGE_PREFIX + "snapshot." + fileId
 	    );
 	}
 
@@ -61,21 +61,21 @@
         theme: "light"
     };
 
-    /** Save the active script text under the active project ID */
-    function saveProjectText(projectId, text) {
-        if (!projectId) return;
+    /** Save the active script text under the active file ID */
+    function saveFileText(fileId, text) {
+        if (!fileId) return;
 
-        localStorage.setItem(STORAGE_PREFIX + "project." + projectId, text);
+        localStorage.setItem(STORAGE_PREFIX + "file." + fileId, text);
 
         window.dispatchEvent(new CustomEvent("storage-saved", {
-            detail: { projectId, text }
+            detail: { fileId, text }
         }));
     }
 
-    /** Load script text from a given project ID */
-    function loadProjectText(projectId) {
-        if (!projectId) return "";
-        return localStorage.getItem(STORAGE_PREFIX + "project." + projectId) || "";
+    /** Load script text from a given file ID */
+    function loadFileText(fileId) {
+        if (!fileId) return "";
+        return localStorage.getItem(STORAGE_PREFIX + "file." + fileId) || "";
     }
 
     /** Save general editor settings */
@@ -100,13 +100,13 @@
         }
     }
 
-    /** Remember last opened project */
-    function setLastProject(projectId) {
-        localStorage.setItem(KEY_LAST_PROJECT, projectId);
+    /** Remember last opened file */
+    function setLastFile(fileId) {
+        localStorage.setItem(KEY_LAST_FILE, fileId);
     }
 
-    function getLastProject() {
-        return localStorage.getItem(KEY_LAST_PROJECT);
+    function getLastFile() {
+        return localStorage.getItem(KEY_LAST_FILE);
     }
 
     // Expose global API
@@ -118,17 +118,17 @@
 	    loadSnapshot,
 	    clearSnapshot,
 	
-	    // project persistence (authoritative)
-	    saveProjectText,
-	    loadProjectText,
+	    // file persistence (authoritative)
+	    saveFileText,
+	    loadFileText,
 	
 	    // settings
 	    saveSettings,
 	    loadSettings,
 	
 	    // session
-	    setLastProject,
-	    getLastProject,
+	    setLastFile,
+	    getLastFile,
 	
 	    defaultSettings
 	};

@@ -8,6 +8,13 @@
 
     // DOM reference
     let previewEl = null;
+    
+
+	// render scheduling state
+	let debounceTimer = null;
+	const TYPING_DEBOUNCE_MS = 120;
+	let lastText = "";
+	let lastSource = null;
 
     // Initialize preview element reference
     function init() {
@@ -64,6 +71,44 @@
         SH.pages = pages;
         window.dispatchEvent(new CustomEvent("preview-updated", { detail: { pages } }));
     }
+        
+    // Single entry point from editor into preview pipeline
+    function updateFromEditor(text, options) {
+        options = options || {};
+
+        const source = options.source || "unknown";
+        const immediate = options.immediate === true;
+
+        // Normalize text
+        const nextText = text == null ? "" : String(text);
+
+        // Avoid unnecessary work
+        if (nextText === lastText && source !== "programmatic") {
+            return;
+        }
+
+        lastText = nextText;
+        lastSource = source;
+
+        // Clear any pending render
+        if (debounceTimer) {
+            clearTimeout(debounceTimer);
+            debounceTimer = null;
+        }
+
+        // Decide timing
+        if (immediate || source === "programmatic" || source === "initial-load") {
+            render(nextText);
+            return;
+        }
+
+        // Typing and similar sources are debounced
+	    debounceTimer = setTimeout(() => {
+	        debounceTimer = null;
+	        render(lastText);
+	    }, TYPING_DEBOUNCE_MS);
+    }
+
 
     // small escape util
     function escapeHtml(s) {
@@ -73,7 +118,14 @@
     // Expose API
     window.CorePreview = {
         init,
-        render
+        updateFromEditor
     };
+    
+	document.addEventListener("DOMContentLoaded", () => {
+		if (window.CorePreview && typeof CorePreview.init === "function") {
+		    CorePreview.init({ previewId: "preview" });
+		}
+	});
+
 
 })();

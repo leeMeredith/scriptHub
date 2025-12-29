@@ -34,13 +34,13 @@ const unsavedChangesController = (() => {
         );
 
         if (choice) {
-            const currentProject = projectController.getCurrentProject();
-            if (!currentProject) {
+            const currentFile = fileController.getCurrentFile();
+            if (!currentFile) {
                 const filename = prompt("Enter filename to save:");
                 if (!filename) return false;
-                await projectController.saveAs(filename);
+                await fileController.saveAs(filename);
             } else {
-                await projectController.save();
+                await fileController.save();
             }
 
             if (onContinue) await onContinue();

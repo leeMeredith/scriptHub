@@ -1,36 +1,36 @@
-// js/core/projectController.js
+// js/core/fileController.js
 // -----------------------------------------------------------------------------
-// projectController
-// Core project lifecycle authority.
+// fileController
+// Core file lifecycle authority.
 // Platform-agnostic: no dialogs, no UI, no environment-specific APIs.
 // File access is delegated to FileAdapter.
 // Safe to reuse in Electron (renderer) without modification.
 // -----------------------------------------------------------------------------
 
-const projectController = (() => {
-    let currentProject = null;
+const fileController = (() => {
+    let currentFile = null;
 
     // ----------------------------
     // Accessors
     // ----------------------------
-    function getCurrentProject() {
-        return currentProject;
+    function getCurrentFile() {
+        return currentFile;
     }
 
-    function adoptOpenProject(filename) {
+    function adoptOpenFile(filename) {
         if (!filename) {
-            currentProject = null;
-            localStorage.removeItem("lastProject");
-            console.log("[projectController] Cleared open project");
+            currentFile = null;
+            localStorage.removeItem("lastFile");
+            console.log("[fileController] Cleared open file");
             return;
         }
-        currentProject = filename;
-        localStorage.setItem("lastProject", filename);
-        console.log("[projectController] Adopted open project:", filename);
+        currentFile = filename;
+        localStorage.setItem("lastFile", filename);
+        console.log("[fileController] Adopted open file:", filename);
     }
 
     // ----------------------------
-    // Open a project
+    // Open a file
     // ----------------------------
     async function open(input) {
         if (!input) return;
@@ -40,13 +40,13 @@ const projectController = (() => {
         if (typeof input === "string") {
             filename = input;
             await window.SH.storageReady;
-            text = await SH.storage.loadProjectText(filename);
+            text = await SH.storage.loadFileText(filename);
         } else {
             filename = input.filename;
             text = input.text;
         }
 
-        console.log("[projectController] Opening project:", filename);
+        console.log("[fileController] Opening file:", filename);
 
         // Prevent marking as dirty while programmatically setting text
         window.isProgrammaticChange = true;
@@ -59,18 +59,18 @@ const projectController = (() => {
         SH.titleState?.setTitle(filename, { dirty: false });
         SH.titleState?.markClean();
 
-        unsavedChangesController.markClean("project opened");
-        adoptOpenProject(filename);
+        unsavedChangesController.markClean("file opened");
+        adoptOpenFile(filename);
     }
 
     // ----------------------------
     // Save / Save As
     // ----------------------------
     async function save() {
-        if (!currentProject) return;
+        if (!currentFile) return;
 
         const text = window.ui_editor.getText();
-        await FileAdapter.save(currentProject, text);
+        await FileAdapter.save(currentFile, text);
 
         unsavedChangesController.markClean("saved");
         SH.titleState?.markClean();
@@ -86,7 +86,7 @@ const projectController = (() => {
         const saved = await FileAdapter.saveAs(filename, text);
         if (!saved) return;
 
-        adoptOpenProject(saved);
+        adoptOpenFile(saved);
         SH.titleState?.setTitle(saved, { dirty: false });
         SH.titleState?.markClean();
 
@@ -97,13 +97,13 @@ const projectController = (() => {
     }
 
     // ----------------------------
-    // Create a new project
+    // Create a new file
     // ----------------------------
-    function newProject() {
-        console.log("[projectController] New project");
+    function newFile() {
+        console.log("[fileController] New file");
 
-        currentProject = null;
-        localStorage.removeItem("lastProject");
+        currentFile = null;
+        localStorage.removeItem("lastFile");
         localStorage.removeItem("sessionState");
 
         window.isProgrammaticChange = true;
@@ -116,7 +116,7 @@ const projectController = (() => {
         SH.titleState?.setTitle("Untitled", { dirty: false });
         SH.titleState?.markClean();
 
-        unsavedChangesController.markClean("new project");
+        unsavedChangesController.markClean("new File");
     }
     
     //==============================
@@ -131,11 +131,11 @@ const projectController = (() => {
         open,
         save,
         saveAs,
-        newProject,
-        getCurrentProject,
-        adoptOpenProject
+        newFile,
+        getCurrentFile,
+        adoptOpenFile
     };
 
 })();
 
-window.projectController = projectController;
+window.fileController = fileController;

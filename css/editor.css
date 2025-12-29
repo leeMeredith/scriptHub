@@ -80,7 +80,7 @@ header a { color: var(--accent); text-decoration: none; font-weight: 600; }
   border-radius: 6px;
 }
 
-.project-title {
+.file-title {
   display: flex;
   align-items: center;
   font-weight: 700;      /* makes ScriptHub bold */
@@ -190,8 +190,8 @@ header a { color: var(--accent); text-decoration: none; font-weight: 600; }
 .btn.ghost { background: white; color: #111; border: 1px solid var(--border); }
 .btn.flat { background: transparent; color: var(--muted); border: 1px dashed transparent; }
 
-/* PROJECT TITLE */
-.project-title {
+/* File TITLE */
+.file-title {
   font-weight: 700;      /* makes ScriptHub bold */
   font-size: 18px;       /* optional—slightly larger */
   display: flex;
