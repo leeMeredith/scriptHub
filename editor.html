@@ -13,7 +13,7 @@
   <!-- Top Header -->
   <header id="topbar" role="banner">
     <div class="file-title">
-      <button id="homeButton" type="button" aria-label="Home">Home</button>
+      <button id="quitButton" type="button" aria-label="Quit">Quit</button>
       <span class="editor-title">ScriptHub Editor</span>
     </div>
 
@@ -73,18 +73,32 @@
     </main>
   </div>
 
-<!-- Core modules -->
-<script src="js/core/state.js"></script>
-<script src="js/core/preview.js"></script>
-<script src="js/core/editor.js"></script>
+<!-- ========================= -->
+<!-- Core Modules -->
+<!-- ========================= -->
 
-<!-- Unsaved changes controller -->
+<!-- Core bootstrap for SH.storage / ProjectIndex <script src="js/core/bootstrap.js"></script> -->
+
+<!-- Core foundational modules -->
+<script src="js/core/state.js"></script> <!-- sets up SH, storage -->
+<script src="js/core/storage.js"></script>
+<script src="js/core/titleState.js"></script> <!-- uses SH.state -->
+<script src="js/core/projectIndex.js"></script> <!-- creates SH.ProjectIndex -->
+
+<!-- File adapter must come before fileController -->
+<script src="js/fileAdapter.js"></script>
+
+<!-- Core preview module -->
+<script src="js/core/preview.js"></script>
+
+<!-- Unsaved changes -->
 <script src="js/core/unsavedChangesController.js"></script>
 
-<!-- File controller -->
+<!-- Controllers -->
+<script src="js/core/projectController.js"></script>
 <script src="js/core/fileController.js"></script>
 
-<!-- UI Modules -->
+<!-- UI modules -->
 <script src="js/ui/previewNavigator.js"></script>
 <script src="js/ui/ui-navigation.js"></script>
 <script src="js/ui/ui-toolbar.js"></script>
@@ -93,14 +107,14 @@
 <script src="js/ui/ui-titlePage.js"></script>
 <script src="js/ui/ui-resize.js"></script>
 
-<!-- File adapter -->
-<script src="js/fileAdapter.js"></script>
+<!-- Editor -->
+<script src="js/core/editor.js"></script>
 
-<!-- Title state -->
-<script src="js/core/titleState.js"></script>
-
-<!-- Main App -->
+<!-- Main app -->
 <script type="module" src="js/app.js"></script>
+
+
+
 
 </body>
 </html>

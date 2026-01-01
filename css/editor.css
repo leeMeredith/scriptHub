@@ -70,10 +70,10 @@ header a { color: var(--accent); text-decoration: none; font-weight: 600; }
    TOP BAR BUTTON & TITLE
    =========================== */
 
-#homeButton {
+#quitButton {
   font-size: 14px;
   padding: 5px 12px;
-  margin-right: 14px;   /* space between Home and ScriptHub Editor */
+  margin-right: 14px;   /* space between Quit and ScriptHub Editor */
   cursor: pointer;
   background: #f5f5f5;
   border: 1px solid #ccc;

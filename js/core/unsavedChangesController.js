@@ -1,67 +1,87 @@
 // js/core/unsavedChangesController.js
 // -----------------------------------------------------------------------------
-// UnsavedChangesController
-// Handles confirm / dirty flow before destructive actions.
-// Platform-agnostic: no editor knowledge, no UI chrome beyond confirm/prompt.
+// unsavedChangesController
 // -----------------------------------------------------------------------------
-const unsavedChangesController = (() => {
-    let isDirty = false;
+// Tracks dirty / clean state per fileId.
+// - Does NOT save files
+// - Does NOT know about projects
+// - Does NOT touch localStorage
+// -----------------------------------------------------------------------------
 
-    function markDirty(reason = "") {
-        if (!isDirty) {
-            isDirty = true;
-            console.log("[Dirty] marked dirty", reason);
-        }
+(function () {
+
+  let dirtyFileId = null;
+
+  // ---------------------------------------------------------------------------
+  // State queries
+  // ---------------------------------------------------------------------------
+
+  function isDirty() {
+    return !!dirtyFileId;
+  }
+
+  function isFileDirty(fileId) {
+    return dirtyFileId === fileId;
+  }
+
+  // ---------------------------------------------------------------------------
+  // State mutation
+  // ---------------------------------------------------------------------------
+
+  function markDirty(fileId, reason = "") {
+    if (!fileId) return;
+
+    dirtyFileId = fileId;
+
+    console.log("[Dirty]", fileId, reason);
+    window.SH?.titleState?.markDirty?.();
+  }
+
+  function markClean(reason = "") {
+    dirtyFileId = null;
+
+    console.log("[Clean]", reason);
+    window.SH?.titleState?.markClean?.();
+  }
+
+  // ---------------------------------------------------------------------------
+  // File lifecycle hooks
+  // ---------------------------------------------------------------------------
+
+  function onFileOpened(fileId) {
+    dirtyFileId = null;
+    window.SH?.titleState?.markClean?.();
+  }
+
+  function onFileSaved(fileId) {
+    if (dirtyFileId === fileId) {
+      markClean("file saved");
     }
+  }
 
-    function markClean(reason = "") {
-        if (isDirty) {
-            isDirty = false;
-            console.log("[Dirty] marked clean", reason);
-        }
-    }
+  function onFileClosed() {
+    dirtyFileId = null;
+  }
 
-    async function confirmDiscardIfDirty(onContinue) {
-        if (!isDirty) {
-            if (onContinue) await onContinue();
-            return true;
-        }
+  // ---------------------------------------------------------------------------
+  // Public API
+  // ---------------------------------------------------------------------------
 
-        const choice = confirm(
-            "You have unsaved changes.\n\n" +
-            "OK = Save first\n" +
-            "Cancel = Discard changes"
-        );
+  window.unsavedChangesController = {
+    // queries
+    isDirty,
+    isFileDirty,
 
-        if (choice) {
-            const currentFile = fileController.getCurrentFile();
-            if (!currentFile) {
-                const filename = prompt("Enter filename to save:");
-                if (!filename) return false;
-                await fileController.saveAs(filename);
-            } else {
-                await fileController.save();
-            }
+    // state
+    markDirty,
+    markClean,
 
-            if (onContinue) await onContinue();
-            return true;
-        }
+    // lifecycle
+    onFileOpened,
+    onFileSaved,
+    onFileClosed
+  };
 
-        const discard = confirm("Discard unsaved changes?");
-        if (!discard) return false;
+  console.log("%c[unsavedChangesController] Ready", "color:#0b5fff;font-weight:700;");
 
-        if (onContinue) await onContinue();
-        return true;
-    }
-
-    // Warn on reload / close
-    window.addEventListener("beforeunload", (e) => {
-        if (!isDirty) return;
-        e.preventDefault();
-        e.returnValue = "";
-    });
-
-    return { isDirty, markDirty, markClean, confirmDiscardIfDirty };
 })();
-
-window.unsavedChangesController = unsavedChangesController;

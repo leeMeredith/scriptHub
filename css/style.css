@@ -27,7 +27,7 @@ body {
    TOPBAR NEW BUTTONS
    =========================== */
 
-#homeButton,
+#quitButton,
 #saveFile,
 #openFile {
   font-size: 14px;
@@ -39,7 +39,7 @@ body {
   cursor: pointer;
 }
 
-#homeButton {
+#quitButton {
   margin-right: 16px; /* extra space before ScriptHub Editor */
 }
 

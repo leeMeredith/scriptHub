@@ -1,141 +1,111 @@
 // js/core/projectController.js
 // -----------------------------------------------------------------------------
 // projectController
-// Core project lifecycle authority.
-// Platform-agnostic: no dialogs, no UI, no environment-specific APIs.
-// File access is delegated to FileAdapter.
-// Safe to reuse in Electron (renderer) without modification.
+// -----------------------------------------------------------------------------
+// Thin delegation layer over ProjectIndex.
+// - Exposes a stable API to the rest of the app
+// - Does NOT store content
+// - Does NOT invent filesystem paths
+// - Delegates all structure to ProjectIndex
+//
+// This keeps existing app.js code readable while allowing
+// ProjectIndex to evolve independently.
 // -----------------------------------------------------------------------------
 
-const projectController = (() => {
-    let currentProject = null;
+(function () {
 
-    // ----------------------------
-    // Accessors
-    // ----------------------------
-    function getCurrentProject() {
-        return currentProject;
-    }
+  if (!window.SH?.ProjectIndex) {
+    console.error("[projectController] ProjectIndex not available");
+    return;
+  }
 
-    function adoptOpenProject(filename) {
-        if (!filename) {
-            currentProject = null;
-            localStorage.removeItem("lastProject");
-            console.log("[projectController] Cleared open project");
-            return;
-        }
-        currentProject = filename;
-        localStorage.setItem("lastProject", filename);
-        console.log("[projectController] Adopted open project:", filename);
-    }
+  const ProjectIndex = window.SH.ProjectIndex;
 
-    // ----------------------------
-    // Open a project
-    // ----------------------------
-    async function open(input) {
-        if (!input) return;
+  // ---------------------------------------------------------------------------
+  // Project lifecycle
+  // ---------------------------------------------------------------------------
 
-        let filename, text;
+  function createProject(name) {
+    return ProjectIndex.createProject(name);
+  }
 
-        if (typeof input === "string") {
-            filename = input;
-            await window.SH.storageReady;
-            text = await SH.storage.loadProjectText(filename);
-        } else {
-            filename = input.filename;
-            text = input.text;
-        }
+  function openProject(projectId) {
+    return ProjectIndex.openProject(projectId);
+  }
 
-        console.log("[projectController] Opening project:", filename);
+  function getCurrentProject() {
+    return ProjectIndex.getCurrentProject();
+  }
 
-        // Prevent marking as dirty while programmatically setting text
-        window.isProgrammaticChange = true;
-        window.ui_editor.setText(text);
-        window.isProgrammaticChange = false;
+  function hasOpenProject() {
+    return !!ProjectIndex.getCurrentProject();
+  }
 
-        window.ui_editor.setCursor?.(0);
-        window.ui_editor.setScroll?.(0);
+  function listProjects() {
+    return ProjectIndex.listProjects();
+  }
 
-        SH.titleState?.setTitle(filename, { dirty: false });
-        SH.titleState?.markClean();
+  // ---------------------------------------------------------------------------
+  // File lifecycle (project-scoped)
+  // ---------------------------------------------------------------------------
 
-        unsavedChangesController.markClean("project opened");
-        adoptOpenProject(filename);
-    }
+  function createFile(name) {
+    return ProjectIndex.createFile(name);
+  }
 
-    // ----------------------------
-    // Save / Save As
-    // ----------------------------
-    async function save() {
-        if (!currentProject) return;
+  function listProjectFiles() {
+    return ProjectIndex.listFiles();
+  }
 
-        const text = window.ui_editor.getText();
-        await FileAdapter.save(currentProject, text);
+  function getFile(fileId) {
+    return ProjectIndex.getFile(fileId);
+  }
 
-        unsavedChangesController.markClean("saved");
-        SH.titleState?.markClean();
-        localStorage.removeItem("sessionState");
+  function renameFile(fileId, newName) {
+    return ProjectIndex.renameFile(fileId, newName);
+  }
 
-        window.isProgrammaticChange = false;
-    }
+  function touchFile(fileId) {
+    return ProjectIndex.touchFile(fileId);
+  }
 
-    async function saveAs(filename) {
-        if (!filename) return;
+  // ---------------------------------------------------------------------------
+  // Compatibility helpers (temporary)
+  // ---------------------------------------------------------------------------
+  // These exist ONLY so app.js doesn't break immediately.
+  // They should be removed once app.js stops thinking in paths.
+  // ---------------------------------------------------------------------------
 
-        const text = window.ui_editor.getText();
-        const saved = await FileAdapter.saveAs(filename, text);
-        if (!saved) return;
+  function ensureProjectExists() {
+    if (hasOpenProject()) return getCurrentProject().id;
 
-        adoptOpenProject(saved);
-        SH.titleState?.setTitle(saved, { dirty: false });
-        SH.titleState?.markClean();
+    const name = prompt("Project name:");
+    if (!name) return null;
 
-        unsavedChangesController.markClean("saved as");
-        localStorage.removeItem("sessionState");
+    return createProject(name);
+  }
 
-        window.isProgrammaticChange = false;
-    }
+  // ---------------------------------------------------------------------------
+  // Public API
+  // ---------------------------------------------------------------------------
 
-    // ----------------------------
-    // Create a new project
-    // ----------------------------
-    function newProject() {
-        console.log("[projectController] New project");
+  window.projectController = {
+    // projects
+    createProject,
+    openProject,
+    getCurrentProject,
+    hasOpenProject,
+    listProjects,
+    ensureProjectExists,
 
-        currentProject = null;
-        localStorage.removeItem("lastProject");
-        localStorage.removeItem("sessionState");
+    // files
+    createFile,
+    listProjectFiles,
+    getFile,
+    renameFile,
+    touchFile
+  };
 
-        window.isProgrammaticChange = true;
-        window.ui_editor.setText("");
-        window.isProgrammaticChange = false;
-
-        window.ui_editor.setCursor?.(0);
-        window.ui_editor.setScroll?.(0);
-
-        SH.titleState?.setTitle("Untitled", { dirty: false });
-        SH.titleState?.markClean();
-
-        unsavedChangesController.markClean("new project");
-    }
-    
-    //==============================
-	//History Bridge (Writer ↔ Git)
-	//==============================
-
-
-    // ----------------------------
-    // Public API
-    // ----------------------------
-    return {
-        open,
-        save,
-        saveAs,
-        newProject,
-        getCurrentProject,
-        adoptOpenProject
-    };
+  console.log("%c[projectController] Ready", "color:#0b5fff;font-weight:700;");
 
 })();
-
-window.projectController = projectController;
