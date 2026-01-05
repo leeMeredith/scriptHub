@@ -32,7 +32,17 @@ Your script begins here.
 
         // Save it immediately
         STORAGE.saveFileText(id, starterText);
-        STORAGE.setLastFile(id);
+
+        // Record session: no project yet, so just file
+        if (window.SH?.projectController?.getCurrentProject) {
+            const project = window.SH.projectController.getCurrentProject();
+            if (project?.id) {
+                STORAGE.saveLastSession({
+                    projectId: project.id,
+                    fileId: id
+                });
+            }
+        }
 
         loadFile(id);
     }
@@ -48,7 +58,17 @@ Your script begins here.
             const id = fileIdFromName(filename);
 
             STORAGE.saveFileText(id, text);
-            STORAGE.setLastFile(id);
+
+            // Record session
+            if (window.SH?.projectController?.getCurrentProject) {
+                const project = window.SH.projectController.getCurrentProject();
+                if (project?.id) {
+                    STORAGE.saveLastSession({
+                        projectId: project.id,
+                        fileId: id
+                    });
+                }
+            }
 
             loadFile(id);
         } catch (err) {
@@ -62,7 +82,16 @@ Your script begins here.
     function loadFile(fileId) {
         const text = STORAGE.loadFileText(fileId) || "";
 
-        STORAGE.setLastFile(fileId);
+        // Record session
+        if (window.SH?.projectController?.getCurrentProject) {
+            const project = window.SH.projectController.getCurrentProject();
+            if (project?.id) {
+                STORAGE.saveLastSession({
+                    projectId: project.id,
+                    fileId
+                });
+            }
+        }
 
         // Update state
         SH.state.setText(text);
@@ -98,7 +127,17 @@ Your script begins here.
             const id = fileIdFromName(file.name);
 
             STORAGE.saveFileText(id, raw);
-            STORAGE.setLastFile(id);
+
+            // Record session
+            if (window.SH?.projectController?.getCurrentProject) {
+                const project = window.SH.projectController.getCurrentProject();
+                if (project?.id) {
+                    STORAGE.saveLastSession({
+                        projectId: project.id,
+                        fileId: id
+                    });
+                }
+            }
 
             loadFile(id);
         };
@@ -107,10 +146,11 @@ Your script begins here.
 
     /**
      * Restore last file at startup if it exists
+     * (deprecated — now handled by projectController.restoreLastSession)
      */
     function restoreLastFile() {
-        const last = STORAGE.getLastFile();
-        if (last) loadFile(last);
+        console.warn("[Files] restoreLastFile is deprecated; use projectController.restoreLastSession()");
+        // kept for backwards compatibility; does nothing
     }
 
     // Expose API

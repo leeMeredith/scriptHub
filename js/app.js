@@ -6,9 +6,26 @@ window.isProgrammaticChange = false;
 
 window._debug_isDirty = () => unsavedChangesController.isDirty;
 
+// ----------------------------
+// Confirm discard if dirty
+// SaveState-aware authority gate
+// ----------------------------
 async function confirmDiscardIfDirty() {
-    if (!unsavedChangesController.isDirty()) return true;
-    return confirm("You have unsaved changes. Discard them?");
+    const saveState = window.fileController.getCurrentSaveState();
+
+    if (!unsavedChangesController.isDirty()) {
+        return true;
+    }
+
+    // EPHEMERAL or IDENTIFIED files with unsaved changes must confirm
+    if (
+        saveState === window.fileController.SaveState.EPHEMERAL ||
+        saveState === window.fileController.SaveState.IDENTIFIED
+    ) {
+        return confirm("You have unsaved changes. Discard them?");
+    }
+
+    return true;
 }
 
 // ----------------------------
@@ -179,14 +196,20 @@ window.addEventListener("DOMContentLoaded", async () => {
 	    e.target.value = "";
 	});
 	
+	// ----------------------------
+	// Save button
+	// SaveState governs first-save vs overwrite
+	// ----------------------------
 	saveBtn?.addEventListener("click", async () => {
-	    const current = window.fileController.getCurrentFile();
+	    const currentFile = window.fileController.getCurrentFile();
+	    const saveState = window.fileController.getCurrentSaveState();
 	
-		if (!current) {
-			await handleFirstSave();
-		    return;
-		}
-
+	    // EPHEMERAL or unidentified files must go through Save As
+	    if (!currentFile || saveState === window.fileController.SaveState.EPHEMERAL) {
+	        await handleFirstSave();
+	        return;
+	    }
+	
 	    await window.fileController.save();
 	});
 	
@@ -226,17 +249,20 @@ window.addEventListener("DOMContentLoaded", async () => {
 	        hiddenInput?.click();
 	    }
 	
-	    // Save
+		// Save
+		// SaveState governs first-save vs overwrite
 		if (key === "s" && !e.shiftKey) {
 		    e.preventDefault();
 		
-		    const current = window.fileController.getCurrentFile();
-			
-			if (!current) {
-			    await handleFirstSave();
-			    return;
-			}
-				
+		    const currentFile = window.fileController.getCurrentFile();
+		    const saveState = window.fileController.getCurrentSaveState();
+		
+		    // EPHEMERAL or unidentified files must go through Save As
+		    if (!currentFile || saveState === window.fileController.SaveState.EPHEMERAL) {
+		        await handleFirstSave();
+		        return;
+		    }
+		
 		    await window.fileController.save();
 		}
 	
@@ -283,7 +309,21 @@ window.addEventListener("DOMContentLoaded", async () => {
             window.ui_editor.setScroll?.(session.scroll ?? 0);
 
             if (session.filename) {
+	            
+	            // IMPORTANT ARCHITECTURE NOTE
+				// adoptOpenFile() MUST remain a non-creating operation.
+				// It may associate the editor with an existing file identity,
+				// but it must NEVER:
+				// - create a ProjectIndex entry
+				// - create a file implicitly
+				// - persist metadata
+				//
+				// Reason:
+				// Startup/session restore is a recovery path, not a creation path.
+				// File identity is ONLY allowed to be created via explicit Save As.
+				// Violating this will reintroduce silent EPHEMERAL → IDENTIFIED leaks.
                 window.fileController.adoptOpenFile(session.filename);
+                
                 SH.titleState?.setTitle(session.filename, { dirty: true });
             } else {
                 SH.titleState?.setTitle("Untitled", { dirty: true });

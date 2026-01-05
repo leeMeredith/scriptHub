@@ -85,6 +85,29 @@
     return createProject(name);
   }
 
+	async function restoreLastSession() {
+	    const storage = window.SH?.storage;
+	    if (!storage?.loadLastSession) return false;
+	
+	    const session = storage.loadLastSession();
+	    if (!session?.projectId) return false;
+	
+	    const opened = openProject(session.projectId);
+	    if (!opened) return false;
+	
+	    if (session.fileId && window.fileController?.open) {
+	        try {
+	            await window.fileController.open(session.fileId);
+	        } catch (e) {
+	            console.warn("[projectController] Failed to restore file", e);
+	        }
+	    }
+	
+	    return true;
+	}
+
+
+
   // ---------------------------------------------------------------------------
   // Public API
   // ---------------------------------------------------------------------------
@@ -97,6 +120,7 @@
     hasOpenProject,
     listProjects,
     ensureProjectExists,
+    restoreLastSession,
 
     // files
     createFile,

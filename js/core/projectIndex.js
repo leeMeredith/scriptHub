@@ -64,14 +64,17 @@
 
     const id = generateId("project");
 
-    projects[id] = {
-      id,
-      name,
-      created: now(),
-      lastOpened: now(),
-      files: {} // fileId → metadata
-    };
-
+	projects[id] = {
+	  id,
+	  name,
+	  created: now(),
+	  lastOpened: now(),
+	
+	  // Files are created ONLY via createFile()
+	  // Projects never auto-create files
+	  files: {} // fileId → metadata
+	};
+	
     currentProjectId = id;
 
     saveAllProjects(projects);
@@ -106,30 +109,52 @@
     }));
   }
 
-  // ---------------------------------------------------------------------------
-  // File API (project-scoped)
-  // ---------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------
+	// File API (project-scoped)
+	// ---------------------------------------------------------------------------
+	
+	let _allowFileCreation = false;
+	
+	function _setFileCreationPrivilege(allow) {
+	    _allowFileCreation = allow;
+	}
+	
+	function createFile(name) {
+	    // File creation is ALWAYS explicit and privileged
+	    // Only saveAs() (or other privileged flow) may create files
+	    if (!_allowFileCreation) {
+	        console.warn("[ProjectIndex] createFile blocked — not privileged");
+	        return null;
+	    }
+	
+	    if (!currentProjectId) return null;
+	    if (!name) return null;
+	
+	    const project = projects[currentProjectId];
+	    if (!project) return null;
+	
+	    const fileId = generateId("file");
+	
+	    project.files[fileId] = {
+	        id: fileId,
+	        name,
+	        created: now(),
+	        modified: now()
+	    };
+	
+	    saveAllProjects(projects);
+	
+	    return fileId;
+	}
+	
+	// Privileged entry point
+	function createFilePrivileged(name) {
+	    _setFileCreationPrivilege(true);
+	    const fileId = createFile(name);
+	    _setFileCreationPrivilege(false);
+	    return fileId;
+	}
 
-  function createFile(name) {
-    if (!currentProjectId) return null;
-    if (!name) return null;
-
-    const project = projects[currentProjectId];
-    if (!project) return null;
-
-    const fileId = generateId("file");
-
-    project.files[fileId] = {
-      id: fileId,
-      name,
-      created: now(),
-      modified: now()
-    };
-
-    saveAllProjects(projects);
-
-    return fileId;
-  }
 
   function renameFile(fileId, newName) {
     const project = getCurrentProject();
@@ -160,21 +185,27 @@
     return Object.values(project.files);
   }
 
-  function getFile(fileId) {
-    const project = getCurrentProject();
-    if (!project) return null;
+	function getFile(fileId) {
+	  const project = getCurrentProject();
+	  if (!project) return null;
+	  if (!fileId) return null;
+	
+	  return project.files[fileId] || null;
+	}
 
-    return project.files[fileId] || null;
-  }
   
 	function highlightFile(fileId) {
 	  const project = getCurrentProject();
 	  if (!project) return false;
+	
+	  // Highlighting NEVER creates files
+	  // If it does not exist, we do nothing
 	  if (!project.files[fileId]) return false;
 	
 	  currentFileId = fileId;
 	
-	  // Notify UI layers without coupling
+	  // Event-only helper for UI layers
+	  // No persistence, no side effects
 	  window.dispatchEvent(
 	    new CustomEvent("file-highlighted", {
 	      detail: { fileId }
@@ -198,6 +229,7 @@
 
     // files
     createFile,
+    createFilePrivileged,
     renameFile,
     touchFile,
     listFiles,

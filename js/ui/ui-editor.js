@@ -2,29 +2,67 @@
 // Connects <textarea id="editor"> to the state system.
 // Handles input, cursor tools, and propagates text-changed events.
 
-return; // kill it
-
 (function () {
     const SH = window.SH || (window.SH = {});
 
     let editor = null;
 
+    function hasState() {
+        return SH.state && typeof SH.state.setText === "function";
+    }
+
     function handleInput() {
-    	const text = editor.value;
-		SH.state.setText(text, { source: "editor" });
-	}
+        if (!editor) return;
+
+        const text = editor.value;
+
+        // Always allow typing
+        // Only propagate if state exists
+        if (hasState()) {
+            SH.state.setText(text, { source: "editor" });
+        }
+    }
 
     function onTextChanged(e) {
-        // Prevent infinite loop: only update if editor didn't cause the change
-        if (e.detail.options?.source === "editor") return;
+        if (!editor) return;
 
-        const newText = e.detail.text;
+        // Ignore our own updates
+        if (e.detail?.options?.source === "editor") return;
+
+        const newText = e.detail?.text;
+        if (typeof newText !== "string") return;
+
         if (editor.value !== newText) {
             editor.value = newText;
         }
     }
+    
+    function getText() {
+        return editor ? editor.value : "";
+	}
+	
+	function setText(text, options = {}) {
+	    if (!editor) return;
+	
+	    const newText = text ?? "";
+	
+	    // Update editor directly
+	    if (editor.value !== newText) {
+	        editor.value = newText;
+	    }
+	
+	    // Notify the rest of the app
+	    window.dispatchEvent(
+	        new CustomEvent("text-changed", {
+	            detail: { text: newText, options }
+	        })
+	    );
+	}
+
 
     function insertAtCursor(str) {
+        if (!editor) return;
+
         const start = editor.selectionStart;
         const end = editor.selectionEnd;
         const before = editor.value.slice(0, start);
@@ -33,12 +71,13 @@ return; // kill it
 
         editor.value = newText;
 
-        // Move cursor after inserted text
         const pos = start + str.length;
         editor.selectionStart = pos;
         editor.selectionEnd = pos;
 
-        SH.state.setText(newText, { source: "editor" });
+        if (hasState()) {
+            SH.state.setText(newText, { source: "editor" });
+        }
     }
 
     function init() {
@@ -54,10 +93,18 @@ return; // kill it
 
         console.log("%c[UI-Editor] Ready", "color:#7c3aed");
 
-        // Export insert API for toolbar module
-        window.ui_editor = { insertAtCursor };
+        // Public API
+		window.ui_editor = {
+		    init,
+		    insertAtCursor,
+		    getText,
+		    setText
+		};
+
+
     }
 
-    window.ui_editor = window.ui_editor || { init };
+	window.ui_editor = window.ui_editor || {};
+	window.ui_editor.init = init;
 
 })();

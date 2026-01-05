@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ScriptHub Scaffold</title>
+  <style>
+    body { font-family: sans-serif; margin: 1em; }
+    #editor { width: 100%; height: 200px; }
+    #file-list div { margin: 0.5em 0; }
+    .dirty { color: red; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<h1 id="doc-title">Untitled</h1>
+
+<div>
+  <select id="project-select"></select>
+  <div id="file-list"></div>
+  <textarea id="editor"></textarea>
+  <br />
+  <button id="new-project-btn">New Project</button>
+  <button id="new-file-btn">New File</button>
+  <button id="save-btn">Save</button>
+  <button id="saveas-btn">Save As</button>
+</div>
+
+<!-- -------------------------- -->
+<!-- CORE MODULES (in order)  -->
+<!-- -------------------------- -->
+<script src="js/core/storage.js"></script>
+<script src="js/core/projects.js"></script>
+<script src="js/core/projectIndex.js"></script>
+<script src="js/core/projectController.js"></script>
+
+<script src="js/core/unsavedChangesController.js"></script>
+
+<script src="js/core/fileController.js"></script>
+<script src="js/ui/ui-editor.js"></script>
+<script src="testHarness.js"></script>
+
+
+</body>
+</html>

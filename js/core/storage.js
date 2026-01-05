@@ -100,14 +100,29 @@
         }
     }
 
-    /** Remember last opened file */
-    function setLastFile(fileId) {
-        localStorage.setItem(KEY_LAST_FILE, fileId);
-    }
-
-    function getLastFile() {
-        return localStorage.getItem(KEY_LAST_FILE);
-    }
+	// ---------------------------
+	// Session persistence
+	// ---------------------------
+	
+	const SESSION_KEY = STORAGE_PREFIX + "lastSession";
+	
+	function saveLastSession(data) {
+	    try {
+	        localStorage.setItem(SESSION_KEY, JSON.stringify(data));
+	    } catch (e) {
+	        console.warn("[Storage] Failed to save session", e);
+	    }
+	}
+	
+	function loadLastSession() {
+	    try {
+	        const raw = localStorage.getItem(SESSION_KEY);
+	        return raw ? JSON.parse(raw) : null;
+	    } catch (e) {
+	        console.warn("[Storage] Failed to load session", e);
+	        return null;
+	    }
+	}
 
     // Expose global API
     window.SH = window.SH || {};
@@ -127,8 +142,8 @@
 	    loadSettings,
 	
 	    // session
-	    setLastFile,
-	    getLastFile,
+	    saveLastSession,
+	    loadLastSession,
 	
 	    defaultSettings
 	};
