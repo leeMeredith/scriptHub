@@ -152,28 +152,32 @@ console.log(
 	  return true;
 	}
 
-// ---------------------------------------------------------------------------
-// newFile
-// ---------------------------------------------------------------------------
-// SaveState transition:
-//   ANY → EPHEMERAL
-//
-// Meaning:
-// - Clears identity
-// - Clears editor contents
-// - Does NOT create files
-// - Does NOT touch ProjectIndex
-//
-// This is a pure editor reset.
-// ---------------------------------------------------------------------------
-   function newFile() {
-    currentFileId = null;
-    window.ui_editor?.setText("");
-    window.SH?.titleState?.setTitle("Untitled", { dirty: false });
+	// ---------------------------------------------------------------------------
+	// newFile
+	// ---------------------------------------------------------------------------
+	// SaveState transition:
+	//   ANY → EPHEMERAL
+	//
+	// Meaning:
+	// - Clears identity
+	// - Clears editor contents
+	// - Does NOT create files
+	// - Does NOT touch ProjectIndex
+	//
+	// This is a pure editor reset.
+	// ---------------------------------------------------------------------------
+	function newFile() {
+	    currentFileId = null;
+	    window.ui_editor?.setText("");
+	    window.SH?.titleState?.setTitle("Untitled", { dirty: false });
+	
+	    // EPHEMERAL because text exists, but no file identity
+	    setCurrentSaveState(SaveState.EPHEMERAL);
+	
+	    // Clear dirty/clean state
+	    unsavedChangesController?.onFileClosed();
+	}
 
-    // EPHEMERAL because text exists, but no file identity
-    setCurrentSaveState(SaveState.EPHEMERAL);
-  }
 
 	// ---------------------------------------------------------------------------
 	// open
@@ -334,6 +338,31 @@ console.log(
 
     return success;
   }
+  
+// ---------------------------------------------------------------------------
+// Editor → Dirty State Bridge
+// ---------------------------------------------------------------------------
+// This is the ONLY place editor input is allowed to mark a file dirty.
+// Programmatic changes (open, restore, setText) must never mark dirty.
+// ---------------------------------------------------------------------------
+
+	window.addEventListener("text-changed", (e) => {
+	  const options = e.detail?.options || {};
+	
+	  // Ignore programmatic changes
+	  if (options.source && options.source !== "editor") return;
+	
+	  // Only mark dirty if we have an identified file
+	  if (currentFileSaveState !== SaveState.IDENTIFIED) return;
+	
+	  if (!currentFileId) return;
+	
+	  unsavedChangesController?.markDirty(
+	    currentFileId,
+	    "editor input"
+	  );
+	});
+	
 
   // ---------------------------------------------------------------------------
   // Public API

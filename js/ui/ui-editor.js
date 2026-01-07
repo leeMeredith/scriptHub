@@ -79,6 +79,20 @@
             SH.state.setText(newText, { source: "editor" });
         }
     }
+    
+    function setEnabled(enabled) {
+	    if (!editor) return;
+	
+	    editor.disabled = !enabled;
+	    editor.readOnly = !enabled;
+	
+	    if (enabled) {
+	        editor.classList.remove("editor-disabled");
+	    } else {
+	        editor.classList.add("editor-disabled");
+	    }
+	}
+
 
     function init() {
         editor = document.getElementById("editor");
@@ -98,7 +112,8 @@
 		    init,
 		    insertAtCursor,
 		    getText,
-		    setText
+		    setText,
+		    setEnabled
 		};
 
 

@@ -53,6 +53,13 @@ header a { color: var(--accent); text-decoration: none; font-weight: 600; }
   overflow: hidden;
 }
 
+.editor-disabled {
+    background-color: #f2f2f2;
+    color: #888;
+    cursor: not-allowed;
+}
+
+
 /* LEFT TOOLBAR */
 #toolbar, .toolbar {
   width: 110px;
