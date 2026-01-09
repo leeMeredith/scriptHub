@@ -3,13 +3,7 @@
 // projectController
 // -----------------------------------------------------------------------------
 // Thin delegation layer over ProjectIndex.
-// - Exposes a stable API to the rest of the app
-// - Does NOT store content
-// - Does NOT invent filesystem paths
-// - Delegates all structure to ProjectIndex
-//
-// This keeps existing app.js code readable while allowing
-// ProjectIndex to evolve independently.
+// Exposes stable API, does NOT store content or manipulate DOM.
 // -----------------------------------------------------------------------------
 
 (function () {
@@ -70,10 +64,51 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Compatibility helpers (temporary)
+  // Session persistence
   // ---------------------------------------------------------------------------
-  // These exist ONLY so app.js doesn't break immediately.
-  // They should be removed once app.js stops thinking in paths.
+
+	async function restoreLastSession() {
+	    const storage = window.SH?.storage;
+	    if (!storage?.loadLastSession) return false;
+	
+	    const session = storage.loadLastSession();
+	    if (!session?.projectId) return false;
+	
+	    // Open last project
+	    const opened = openProject(session.projectId);
+	    if (!opened) return false;
+	
+	    let fileOpened = false;
+	
+	    // Open last file if possible
+	    if (session.fileId && window.fileController?.open) {
+	        try {
+	            fileOpened = await window.fileController.open(session.fileId);
+	        } catch (e) {
+	            console.warn("[projectController] Failed to restore file", e);
+	        }
+	    }
+	
+	    // Persist session after restore
+	    window.projectController.persistCurrentSession?.();
+	
+	    return true;
+	}
+
+  function persistCurrentSession() {
+    const storage = window.SH?.storage;
+    if (!storage?.saveLastSession) return;
+
+    const projectId = getCurrentProject()?.id;
+    const fileId = window.fileController?.getCurrentFile();
+
+    if (!projectId) return;
+
+    storage.saveLastSession({ projectId, fileId });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Compatibility / temp helpers
   // ---------------------------------------------------------------------------
 
   function ensureProjectExists() {
@@ -84,29 +119,6 @@
 
     return createProject(name);
   }
-
-	async function restoreLastSession() {
-	    const storage = window.SH?.storage;
-	    if (!storage?.loadLastSession) return false;
-	
-	    const session = storage.loadLastSession();
-	    if (!session?.projectId) return false;
-	
-	    const opened = openProject(session.projectId);
-	    if (!opened) return false;
-	
-	    if (session.fileId && window.fileController?.open) {
-	        try {
-	            await window.fileController.open(session.fileId);
-	        } catch (e) {
-	            console.warn("[projectController] Failed to restore file", e);
-	        }
-	    }
-	
-	    return true;
-	}
-
-
 
   // ---------------------------------------------------------------------------
   // Public API
@@ -121,6 +133,7 @@
     listProjects,
     ensureProjectExists,
     restoreLastSession,
+    persistCurrentSession,
 
     // files
     createFile,

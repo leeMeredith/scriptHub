@@ -168,13 +168,19 @@ console.log(
 	// ---------------------------------------------------------------------------
 	function newFile() {
 	    currentFileId = null;
-	    window.ui_editor?.setText("");
+	
+		if (window.ui_editor && typeof window.ui_editor.setText === "function") {
+		    window.isProgrammaticChange = true;
+		    window.ui_editor.setText("");
+		    window.isProgrammaticChange = false;
+		} else {
+		    console.warn("[fileController] Editor not ready in newFile");
+		}
+	
 	    window.SH?.titleState?.setTitle("Untitled", { dirty: false });
 	
-	    // EPHEMERAL because text exists, but no file identity
 	    setCurrentSaveState(SaveState.EPHEMERAL);
 	
-	    // Clear dirty/clean state
 	    unsavedChangesController?.onFileClosed();
 	}
 
@@ -195,44 +201,45 @@ console.log(
 	// - Never creates identity
 	// ---------------------------------------------------------------------------
 	async function open(fileId) {
-	  if (!fileId) return false;
+	    if (!fileId) return false;
 	
-	  // Identity binding is centralized here
-	  const adopted = adoptOpenFile(fileId);
-	  if (!adopted) {
-	    alert(`[fileController] Cannot open file: ${fileId} does not exist.`);
-	    return false;
-	  }
+	    if (!window.ui_editor || typeof window.ui_editor.setText !== "function") {
+	        console.warn("[fileController] Editor not ready during open, aborting");
+	        return false;
+	    }
 	
-	  const text = await storage.loadFileText(fileId) || "";
+	    const adopted = adoptOpenFile(fileId);
+	    if (!adopted) {
+	        alert(`[fileController] Cannot open file: ${fileId} does not exist.`);
+	        return false;
+	    }
 	
-	  window.isProgrammaticChange = true;
-	  window.ui_editor.setText(text, { source: "open" });
-	  window.isProgrammaticChange = false;
+	    const text = await storage.loadFileText(fileId) || "";
 	
-	  ProjectIndex.highlightFile(fileId);
+	    window.isProgrammaticChange = true;
+	    window.ui_editor.setText(text, { source: "open" });
+	    window.isProgrammaticChange = false;
 	
-	  unsavedChangesController?.onFileOpened(fileId);
+	    ProjectIndex.highlightFile(fileId);
 	
-	  window.SH?.titleState?.setTitle(
-	    ProjectIndex.getFile(fileId)?.name || "Untitled",
-	    { dirty: false }
-	  );
-	  
-		// Record last session (project + file)
-		if (window.SH?.storage?.saveLastSession) {
-		    const project = ProjectIndex.getCurrentProject();
-		    if (project?.id) {
-		        window.SH.storage.saveLastSession({
-		            projectId: project.id,
-		            fileId
-		        });
-		    }
-		}
-
+	    unsavedChangesController?.onFileOpened(fileId);
 	
-	  // SaveState is already IDENTIFIED via adoptOpenFile()
-	  return true;
+	    window.SH?.titleState?.setTitle(
+	        ProjectIndex.getFile(fileId)?.name || "Untitled",
+	        { dirty: false }
+	    );
+	
+	    if (window.SH?.storage?.saveLastSession) {
+	        const project = ProjectIndex.getCurrentProject();
+	        if (project?.id) {
+	            window.SH.storage.saveLastSession({
+	                projectId: project.id,
+	                fileId
+	            });
+	        }
+	    }
+	
+	    return true;
 	}
 
 	async function openFileFromBrowser(file) {
@@ -281,7 +288,13 @@ console.log(
     
     if (!fileId) return false;
 
-    const text = window.ui_editor.getText();
+    if (!window.ui_editor || typeof window.ui_editor.getText !== "function") {
+	    console.warn("[fileController] Editor not ready during save");
+	    return false;
+	}
+	
+	const text = window.ui_editor.getText();
+
 
     const success = await storage.saveFileText(fileId, text);
 
@@ -324,7 +337,13 @@ console.log(
 
     currentFileId = fileId;
 
-    const text = window.ui_editor.getText();
+    if (!window.ui_editor || typeof window.ui_editor.getText !== "function") {
+	    console.warn("[fileController] Editor not ready during saveAs");
+	    return false;
+	}
+	
+	const text = window.ui_editor.getText();
+
     const success = await storage.saveFileText(fileId, text);
 
     if (success) {
