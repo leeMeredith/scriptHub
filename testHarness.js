@@ -14,22 +14,34 @@ if (!window.SH?.storage || !window.SH?.ProjectIndex || !window.fileController) {
 // ---------------------------
 // First-run scaffold (TEMP)
 // ---------------------------
+// ---------------------------
+// First-run scaffold (explicit creation only)
+// ---------------------------
 async function firstRunScaffoldIfNeeded() {
     const projects = window.projectController.listProjects?.() || [];
-    if (projects.length > 0) return; // already initialized
+    if (projects.length > 0) return;
 
-    console.log("[FirstRun] No projects found — scaffolding initial project");
+    console.log("[FirstRun] No projects found — waiting for user to create one");
 
-    const project = window.projectController.createProject("My First Script");
-    await window.SH.storage.saveProject(project);
+    // Editor disabled until user creates a file
+    if (window.ui_editor) {
+        window.ui_editor.setEnabled?.(false);
+    }
 
-    const fileId = window.SH.ProjectIndex.createFilePrivileged("scene-01.fountain");
-    await window.SH.storage.saveFileContent(fileId, project.id, "");
+    // Clear UI selects
+    if (projectSelectEl) projectSelectEl.innerHTML = "";
+    if (fileListEl) fileListEl.innerHTML = "";
 
-    await window.fileController.open(fileId);
-
-    console.log("[FirstRun] Initial project and file created");
+    // Placeholder text
+    if (projectSelectEl) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "No projects yet";
+        projectSelectEl.appendChild(opt);
+    }
+    if (titleEl) titleEl.textContent = "No file open";
 }
+
 
 // ---------------------------
 // UI Elements
@@ -48,9 +60,15 @@ const btnSaveAs = document.getElementById("saveas-btn");
 // Helpers
 // ---------------------------
 function renderProjects(selectedId = null) {
+    // Clear existing options
     projectSelectEl.innerHTML = "";
 
     const projects = window.projectController.listProjects();
+
+    // Ensure the currently active project is selected if not explicitly passed
+    const currentProjectId = window.projectController.getCurrentProject()?.id;
+    const projectToSelect = selectedId || currentProjectId || "";
+
     for (const project of projects) {
         const opt = document.createElement("option");
         opt.value = project.id;
@@ -58,10 +76,12 @@ function renderProjects(selectedId = null) {
         projectSelectEl.appendChild(opt);
     }
 
-    if (selectedId) {
-        projectSelectEl.value = selectedId;
+    // Explicitly select the current project
+    if (projectToSelect) {
+        projectSelectEl.value = projectToSelect;
     }
 }
+
 
 function handleFileClick(file) {
     return async () => {
@@ -89,9 +109,28 @@ function renderFiles() {
 
 function updateEditorEnabledState() {
     if (!window.fileController || !window.ui_editor) return;
+
     const saveState = window.fileController.getCurrentSaveState?.();
-    window.ui_editor.setEnabled(saveState === window.fileController.SaveState.IDENTIFIED);
+    const hasFile = !!window.fileController.getCurrentFile();
+
+    // Editor enabled **ONLY** if we have an identified file
+    const shouldEnable = (saveState === window.fileController.SaveState.IDENTIFIED) && hasFile;
+
+    window.ui_editor.setEnabled?.(shouldEnable);
 }
+
+
+function hasStoredProjects() {
+    const raw = localStorage.getItem("ScriptHub.projects");
+    if (!raw) return false;
+    try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) && parsed.length > 0;
+    } catch {
+        return false;
+    }
+}
+
 
 // ---------------------------
 // Event handlers
@@ -103,17 +142,22 @@ btnNewProject.onclick = async () => {
     const project = window.projectController.createProject(name);
     await window.SH.storage.saveProject(project);
 
-    renderProjects();
+    // Render projects dropdown and select the new project
+    renderProjects(project.id);
 
+    // Open newly created project
     window.projectController.openProject(project.id);
-    projectSelectEl.value = project.id;
 
+    // Render files (should be empty)
     renderFiles();
 
-    window.fileController.newFile();
-    titleEl.textContent = "Untitled";
+    // Clear editor and disable typing until a file is created
+    if (window.fileController) window.fileController.newFile(); // clears editor, sets EPHEMERAL
+    if (window.ui_editor) window.ui_editor.setEnabled(false);
 
-    updateEditorEnabledState();
+    titleEl.textContent = "No file selected";
+
+    // Persist session
     window.projectController.persistCurrentSession?.();
 };
 
@@ -127,15 +171,29 @@ btnNewFile.onclick = async () => {
     const name = prompt("Enter file name:");
     if (!name) return;
 
+    // Create new file
     const newFileId = window.SH.ProjectIndex.createFilePrivileged(name);
     if (!newFileId) return alert("Failed to create file.");
 
-    await window.SH.storage.saveFileText(newFileId, "");
+    // Save empty content
+    await window.SH.storage.saveFileContent(newFileId, project.id, "");
+
+    // Open file in editor
     await window.fileController.open(newFileId);
 
+    // Render files
     renderFiles();
+
+    // Enable editor
+    if (window.ui_editor) {
+        editorEl.value = "";
+        window.ui_editor.setEnabled?.(true);
+    }
+
     titleEl.textContent = name;
-    updateEditorEnabledState();
+    window.fileController.setCurrentSaveState?.("IDENTIFIED");
+
+    // Persist session
     window.projectController.persistCurrentSession?.();
 };
 
@@ -170,19 +228,37 @@ btnSaveAs.onclick = async () => {
 projectSelectEl.onchange = async () => {
     const projectId = projectSelectEl.value;
     if (!projectId) return;
+
     const opened = window.projectController.openProject(projectId);
     if (!opened) return alert("[ProjectSelect] Failed to open project");
+
+    // Render files for the selected project
     renderFiles();
+
     const files = window.projectController.listProjectFiles();
+
     if (files?.length) {
+        // Project has files → open last opened file or first file
         const lastOpenedFileId = window.fileController.getLastOpenedFile?.();
         const fileToOpen = files.find(f => f.id === lastOpenedFileId) || files[0];
+
         if (fileToOpen?.id) {
             await window.fileController.open(fileToOpen.id);
             titleEl.textContent = fileToOpen.name;
-            window.projectController.persistCurrentSession?.();
         }
+    } else {
+        // Project has **no files**
+        // Clear editor, disable typing, reset SaveState to EPHEMERAL
+        if (window.fileController) window.fileController.newFile(); // clears editor, sets EPHEMERAL
+        if (window.ui_editor) window.ui_editor.setEnabled(false);
+        editorEl.value = "";
+        titleEl.textContent = "No file selected";
     }
+
+    // Persist session
+    window.projectController.persistCurrentSession?.();
+
+    // Always update editor state based on current file/save state
     updateEditorEnabledState();
 };
 
@@ -224,7 +300,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 // storage-initialized: Restore last session and render UI
 // ---------------------------
 window.addEventListener("ui-editor-ready", async () => {
-    await firstRunScaffoldIfNeeded();
+    const hasProjects = hasStoredProjects();
+
+    if (!hasProjects) {
+        await firstRunScaffoldIfNeeded();
+        renderProjects();
+        updateEditorEnabledState();
+        console.log("[Init] No stored projects — fresh install state");
+        return;
+    }
+
     await window.projectController.restoreLastSession();
     renderProjects();
 
@@ -240,14 +325,37 @@ window.addEventListener("ui-editor-ready", async () => {
     if (currentProject) projectSelectEl.value = currentProject.id;
     renderFiles();
 
-	const currentFileId = window.fileController.getCurrentFile();
-	if (currentFileId) {
-	    const file = window.SH.ProjectIndex.getFile(currentFileId);
-	    if (file) {
-	        titleEl.textContent = file.name;
-	    }
-	}
+    const currentFileId = window.fileController.getCurrentFile();
+    if (currentFileId) {
+        const file = window.SH.ProjectIndex.getFile(currentFileId);
+        if (file) {
+            titleEl.textContent = file.name;
+        }
+    }
 
     updateEditorEnabledState();
     console.log("[Init] Storage initialized and session restored");
 });
+
+
+//Then in the console you just run:    resetScriptHub();
+// ---------------------------
+// Full ScriptHub reset
+// ---------------------------
+window.resetScriptHub = function () {
+  console.log("[Reset] Nuking ScriptHub");
+
+  localStorage.removeItem("ScriptHub.projects");
+  localStorage.removeItem("ScriptHub.lastSession");
+  localStorage.removeItem("ScriptHub.currentProjectId");
+  localStorage.removeItem("sessionState");
+
+  Object.keys(localStorage).forEach(k => {
+    if (k.startsWith("editorState_") || k.startsWith("scripthub_autosave")) {
+      localStorage.removeItem(k);
+    }
+  });
+
+  console.log("[Reset] Storage cleared. Reloading…");
+  location.reload();
+};
